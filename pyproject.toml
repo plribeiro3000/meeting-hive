@@ -1,0 +1,46 @@
+[project]
+name = "meeting-hive"
+version = "0.1.0"
+description = "Local-first, AI-queryable meeting archive. Ingests from meeting tools, applies personal vocabulary corrections, and stores in portable markdown."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Paulo Ribeiro", email = "plribeiro3000@gmail.com" },
+]
+requires-python = ">=3.11"
+keywords = ["meetings", "notes", "ai", "transcription", "vocabulary", "markdown"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business",
+]
+
+dependencies = [
+    "anthropic>=0.40.0",
+    "openai>=1.0.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0",
+    "python-dateutil>=2.8.2",
+]
+
+[project.scripts]
+meeting-hive = "meeting_hive.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/plribeiro3000/meeting-hive"
+Repository = "https://github.com/plribeiro3000/meeting-hive"
+Issues = "https://github.com/plribeiro3000/meeting-hive/issues"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["meeting_hive*"]
