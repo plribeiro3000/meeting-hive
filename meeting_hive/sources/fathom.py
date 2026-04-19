@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import requests
@@ -51,9 +51,7 @@ class FathomSource:
     def _headers(self) -> dict[str, str]:
         key = self._explicit_key or os.environ.get(self._api_key_env)
         if not key:
-            raise SourceAuthError(
-                f"{self._api_key_env} not set — check secrets.env"
-            )
+            raise SourceAuthError(f"{self._api_key_env} not set — check secrets.env")
         return {
             "X-Api-Key": key,
             "Accept": "application/json",
@@ -68,7 +66,7 @@ class FathomSource:
                 if resp.status_code == 401:
                     raise SourceAuthError("Fathom rejected the API key (401)")
                 if resp.status_code == 429:
-                    wait = 2 ** attempt
+                    wait = 2**attempt
                     log.warning("Fathom 429 — sleeping %ds", wait)
                     time.sleep(wait)
                     continue
@@ -80,11 +78,11 @@ class FathomSource:
                 last_error = e
                 if attempt == self._retries - 1:
                     raise SourceError(f"Fathom HTTP error: {e}") from e
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
         raise SourceError(f"Fathom request failed after {self._retries} attempts: {last_error}")
 
     def list_meetings(self, since_days: int) -> list[Meeting]:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
+        cutoff = datetime.now(UTC) - timedelta(days=since_days)
         params = {"created_after": cutoff.isoformat()}
         meetings: list[Meeting] = []
         cursor: str | None = None
@@ -134,7 +132,7 @@ class FathomSource:
             id=str(recording_id),
             title=title,
             attendees=attendees,
-            created_at=created_at or datetime.now(timezone.utc),
+            created_at=created_at or datetime.now(UTC),
             duration_seconds=duration,
         )
 

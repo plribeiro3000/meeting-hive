@@ -1,10 +1,17 @@
 # meeting-hive
 
+[![CI](https://github.com/plribeiro3000/meeting-hive/actions/workflows/ci.yml/badge.svg)](https://github.com/plribeiro3000/meeting-hive/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 **A local-first pipeline for correcting speech-to-text errors in meeting transcripts, using a vocabulary you maintain.**
 
 Each meeting becomes a normalized pair of markdown files on your disk. Any tool with filesystem access — macOS Spotlight, `grep`, Obsidian, or whatever AI assistant you happen to use — can search, cross-reference, and reason across the whole hive.
 
-Cross-platform (macOS / Linux / Windows) via an adapter architecture: you pick which meeting tool feeds the pipeline and which vocabulary source corrects its transcripts. Swap either independently. Add new adapters without touching the core.
+Runs on macOS, Linux, and Windows via an adapter architecture: you pick which meeting tool feeds the pipeline and which vocabulary source corrects its transcripts. Swap either independently. Add new adapters without touching the core.
+
+**Platform support:** macOS is first-class (dedicated installer under `scripts/macos/`). Linux and Windows are documented with manual setup recipes — see [`docs/scheduling.md`](docs/scheduling.md). Dedicated installers for both are tracked as [good first issues](https://github.com/plribeiro3000/meeting-hive/issues).
 
 ---
 
@@ -112,7 +119,7 @@ Adding a new adapter is a single file + one line in the built-in registry. Adapt
 ```bash
 git clone https://github.com/plribeiro3000/meeting-hive.git ~/Projects/meeting-hive
 cd ~/Projects/meeting-hive
-./scripts/install.sh --summarizer anthropic   # or openai / ollama
+./scripts/macos/install.sh --summarizer anthropic   # or openai / ollama
 ```
 
 The installer:
@@ -131,7 +138,7 @@ Everything the installer creates is idempotent. Re-running it is safe.
 The installer works non-interactively if every decision is passed as a flag. Stdin not being a TTY is auto-detected; missing `--summarizer` becomes a hard error (everything else falls back to sensible defaults). API keys are never requested programmatically — pass `--skip-secrets` and the installer prints the exact command the user needs to run afterwards.
 
 ```bash
-./scripts/install.sh \
+./scripts/macos/install.sh \
     --summarizer anthropic \
     --source granola \
     --vocabulary sqlite \
@@ -153,16 +160,16 @@ Verify with a dry-run that doesn't hit the network or LLM:
 meeting-hive sync --since 1 --dry-run --verbose
 ```
 
-`./scripts/install.sh --help` lists every flag.
+`./scripts/macos/install.sh --help` lists every flag.
 
 #### Schedule
 
 Default: Monday-Friday at 00:00 local time. Override via installer flags:
 
 ```bash
-./scripts/install.sh --hour 4 --minute 30 --days 1-5
-./scripts/install.sh --hour 3 --minute 0 --days 0,2,4,6   # Sun/Tue/Thu/Sat
-./scripts/install.sh --days 0-6                           # every day
+./scripts/macos/install.sh --hour 4 --minute 30 --days 1-5
+./scripts/macos/install.sh --hour 3 --minute 0 --days 0,2,4,6   # Sun/Tue/Thu/Sat
+./scripts/macos/install.sh --days 0-6                           # every day
 ```
 
 Weekdays follow launchd's convention: `0` or `7` = Sunday, `1` = Monday, ..., `6` = Saturday. Re-running the installer with different flags regenerates the plist and reloads the agent.
@@ -170,9 +177,9 @@ Weekdays follow launchd's convention: `0` or `7` = Sunday, `1` = Monday, ..., `6
 #### Uninstall
 
 ```bash
-./scripts/uninstall.sh              # removes launchd agent, plist, and CLI symlink
-./scripts/uninstall.sh --purge      # also removes config, vocabulary DB, logs
-./scripts/uninstall.sh --purge --nuke-notes  # also removes ~/.meeting-notes/ (data loss)
+./scripts/macos/uninstall.sh              # removes launchd agent, plist, and CLI symlink
+./scripts/macos/uninstall.sh --purge      # also removes config, vocabulary DB, logs
+./scripts/macos/uninstall.sh --purge --nuke-notes  # also removes ~/.meeting-notes/ (data loss)
 ```
 
 `--nuke-notes` requires you to type the archive path to confirm (or pass `--i-really-mean-it` in non-TTY mode). The meeting archive is user data — the script won't delete it by accident. See `uninstall.sh --help` for every flag.

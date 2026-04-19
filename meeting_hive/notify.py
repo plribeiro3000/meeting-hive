@@ -63,7 +63,3 @@ def _notify_windows(title: str, message: str) -> None:
         check=True,
         capture_output=True,
     )
-
-
-if __name__ == "__main__":
-    notify("meeting-hive", "Test notification ✅")

@@ -44,9 +44,7 @@ class AnthropicSummarizer:
     def _get_key(self) -> str:
         key = self._explicit_key or os.environ.get(self._api_key_env)
         if not key:
-            raise SummarizerAuthError(
-                f"{self._api_key_env} not set — check your secrets.env"
-            )
+            raise SummarizerAuthError(f"{self._api_key_env} not set — check your secrets.env")
         return key
 
     def summarize(self, transcript: str, title: str, attendees: list[str]) -> str:
@@ -63,15 +61,24 @@ class AnthropicSummarizer:
                     max_tokens=self._max_tokens,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return strip_fences(message.content[0].text)
+                block = message.content[0]
+                text = getattr(block, "text", None)
+                if text is None:
+                    raise SummarizerError(
+                        f"Anthropic response had no text block (got {type(block).__name__})"
+                    )
+                return strip_fences(text)
             except anthropic.AuthenticationError as e:
                 raise SummarizerAuthError(str(e)) from e
             except (anthropic.RateLimitError, anthropic.APIStatusError) as e:
                 last_error = e
-                wait = 2 ** attempt
+                wait = 2**attempt
                 log.warning(
                     "Anthropic error (attempt %d/%d): %s — sleeping %ds",
-                    attempt + 1, self._retries, e, wait,
+                    attempt + 1,
+                    self._retries,
+                    e,
+                    wait,
                 )
                 time.sleep(wait)
 

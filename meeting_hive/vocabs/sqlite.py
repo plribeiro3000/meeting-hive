@@ -10,9 +10,10 @@ import / export) or by editing `phrase` rows directly if needed.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -46,13 +47,16 @@ class SqliteVocabulary:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_schema()
 
-    def _connect(self) -> sqlite3.Connection:
+    def _connect(self) -> contextlib.AbstractContextManager[sqlite3.Connection]:
+        """Open + close a connection. `sqlite3.Connection`'s own context manager
+        only handles transactions, not the connection lifecycle — wrap with
+        `contextlib.closing` so the connection is always released."""
         conn = sqlite3.connect(self._db_path)
         conn.row_factory = sqlite3.Row
-        return conn
+        return contextlib.closing(conn)
 
     def _init_schema(self) -> None:
-        with self._connect() as conn:
+        with self._connect() as conn, conn:
             conn.executescript(_SCHEMA)
 
     # VocabularySource -------------------------------------------------------
@@ -70,7 +74,7 @@ class SqliteVocabulary:
         if not phrase or not replacement:
             raise ValueError("phrase and replacement must both be non-empty")
         now = _now_iso()
-        with self._connect() as conn:
+        with self._connect() as conn, conn:
             conn.execute(
                 """
                 INSERT INTO vocabulary (phrase, replacement, created_at, updated_at, source)
@@ -84,12 +88,12 @@ class SqliteVocabulary:
             )
 
     def remove(self, phrase: str) -> bool:
-        with self._connect() as conn:
+        with self._connect() as conn, conn:
             cur = conn.execute("DELETE FROM vocabulary WHERE phrase = ?", (phrase,))
             return cur.rowcount > 0
 
     def clear(self) -> int:
-        with self._connect() as conn:
+        with self._connect() as conn, conn:
             cur = conn.execute("DELETE FROM vocabulary")
             return cur.rowcount
 
@@ -109,7 +113,7 @@ class SqliteVocabulary:
         if not pairs:
             return 0
         now = _now_iso()
-        with self._connect() as conn:
+        with self._connect() as conn, conn:
             conn.executemany(
                 """
                 INSERT INTO vocabulary (phrase, replacement, created_at, updated_at, source)
@@ -125,11 +129,4 @@ class SqliteVocabulary:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    v = SqliteVocabulary()
-    print(f"DB: {v._db_path}")
-    print(f"Entries: {len(v.load())}")
+    return datetime.now(UTC).isoformat(timespec="seconds")

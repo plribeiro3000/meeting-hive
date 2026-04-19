@@ -30,6 +30,7 @@ class MutableVocabularySource(VocabularySource, Protocol):
     def remove(self, phrase: str) -> bool:
         """Return True if removed, False if phrase was not present."""
         ...
+
     def clear(self) -> int:
         """Remove everything. Return the number of entries removed."""
         ...

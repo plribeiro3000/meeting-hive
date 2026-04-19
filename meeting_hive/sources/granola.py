@@ -11,7 +11,7 @@ import json
 import logging
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -93,7 +93,7 @@ class GranolaSource:
                         "Granola token rejected (401) — re-login in the desktop app"
                     )
                 if resp.status_code == 429:
-                    wait = 2 ** attempt
+                    wait = 2**attempt
                     log.warning("Granola 429 — sleeping %ds", wait)
                     time.sleep(wait)
                     continue
@@ -102,14 +102,14 @@ class GranolaSource:
             except requests.HTTPError:
                 if attempt == retries - 1:
                     raise
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
         raise RuntimeError("unreachable")
 
     def list_meetings(self, since_days: int) -> list[Meeting]:
         cache = self._load_cache()
         docs = cache.get("cache", {}).get("state", {}).get("documents", {})
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
+        cutoff = datetime.now(UTC) - timedelta(days=since_days)
         meetings: list[Meeting] = []
 
         for doc_id, doc in docs.items():
@@ -131,12 +131,14 @@ class GranolaSource:
             if creator_email and creator_email not in attendees:
                 attendees.append(creator_email)
 
-            meetings.append(Meeting(
-                id=doc_id,
-                title=doc.get("title") or "(untitled)",
-                attendees=attendees,
-                created_at=created,
-            ))
+            meetings.append(
+                Meeting(
+                    id=doc_id,
+                    title=doc.get("title") or "(untitled)",
+                    attendees=attendees,
+                    created_at=created,
+                )
+            )
 
         meetings.sort(key=lambda m: m.created_at)
         log.info("Granola: %d meetings in last %d days", len(meetings), since_days)
@@ -153,9 +155,7 @@ class GranolaSource:
         # Fallback: REST API.
         try:
             token = self._load_token()
-            data = self._api_post(
-                "/get-document-transcript", {"document_id": meeting_id}, token
-            )
+            data = self._api_post("/get-document-transcript", {"document_id": meeting_id}, token)
         except SourceAuthError:
             raise
         except Exception as e:
@@ -191,13 +191,3 @@ def _join_segments(segments: list[dict]) -> str:
             prefix = ""
         lines.append(f"{prefix}{text}")
     return "\n".join(lines)
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    src = GranolaSource()
-    for m in src.list_meetings(since_days=7):
-        print(
-            f"  {m.created_at.strftime('%Y-%m-%d %H:%M')} | "
-            f"{m.title[:50]:50s} | {len(m.attendees)} attendees"
-        )

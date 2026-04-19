@@ -27,7 +27,9 @@ def slugify(text: str) -> str:
     return text or "untitled"
 
 
-def target_paths(date_str: str, slug: str, scope: str = DEFAULT_SCOPE, year: str | None = None) -> tuple[Path, Path]:
+def target_paths(
+    date_str: str, slug: str, scope: str = DEFAULT_SCOPE, year: str | None = None
+) -> tuple[Path, Path]:
     """Return (summary_path, transcript_path) for a given date+slug under the given scope."""
     year = year or date_str.split("-")[0]
     base = NOTES_ROOT / scope / year
@@ -48,6 +50,7 @@ def _format_time_range(start: datetime, duration_seconds: int | None) -> str:
     start_str = start_local.strftime("%H:%M")
     if duration_seconds:
         from datetime import timedelta
+
         end_local = start_local + timedelta(seconds=duration_seconds)
         end_str = end_local.strftime("%H:%M")
     else:
@@ -58,9 +61,9 @@ def _format_time_range(start: datetime, duration_seconds: int | None) -> str:
         # Naive datetime slipped through — fall back to the current machine offset.
         tz = datetime.now().astimezone().strftime("%z")
 
-    if len(tz) == 5:        # "+HHMM" / "-HHMM"
+    if len(tz) == 5:  # "+HHMM" / "-HHMM"
         tz_fmt = f"GMT{tz[:3]}:{tz[3:]}"
-    elif len(tz) == 7:      # "+HHMMSS" / "-HHMMSS" (rare, sub-minute offsets)
+    elif len(tz) == 7:  # "+HHMMSS" / "-HHMMSS" (rare, sub-minute offsets)
         tz_fmt = f"GMT{tz[:3]}:{tz[3:5]}"
     else:
         tz_fmt = "UTC"
@@ -170,20 +173,3 @@ def write_meeting(
     transcript_path.write_text(transcript_fm + transcript_body)
     log.info("Wrote: %s", summary_path.name)
     return summary_path, transcript_path
-
-
-if __name__ == "__main__":
-    from datetime import timezone
-    logging.basicConfig(level=logging.INFO)
-    paths = write_meeting(
-        title="TEST — Writer smoke check",
-        start=datetime(2026, 4, 17, 15, 0, tzinfo=timezone.utc),
-        duration_seconds=1800,
-        attendees=["alice@example.com", "bob@example.com"],
-        classification_type="internal",
-        classification_entity="alignment",
-        transcript="00:00 Hello world.",
-        summary="Smoke test meeting.\n\n## Key Points\n- Test OK",
-        dry_run=True,
-    )
-    print("Would write:", paths)

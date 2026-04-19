@@ -3,6 +3,7 @@
 Subcommands:
     init [options]                    # generate config.yaml at the default path
     sync                              # run the ingestion pipeline
+    doctor                            # diagnose installation health
     vocab list                        # read-only
     vocab add <phrase> <replacement>  # mutable adapter required
     vocab remove <phrase>             # mutable adapter required
@@ -18,7 +19,7 @@ import logging
 import sys
 from pathlib import Path
 
-from meeting_hive import classifier, paths, sources, summarizers, vocabs
+from meeting_hive import __version__, classifier, paths, sources, summarizers, vocabs
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -28,9 +29,8 @@ def _build_parser() -> argparse.ArgumentParser:
             "Sync meetings from a source tool into a local, AI-queryable markdown archive."
         ),
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Verbose logging."
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging.")
+    parser.add_argument("-V", "--version", action="version", version=f"meeting-hive {__version__}")
     sub = parser.add_subparsers(dest="command")
 
     # init
@@ -74,10 +74,18 @@ def _build_parser() -> argparse.ArgumentParser:
     sync_p = sub.add_parser(
         "sync", help="Run the ingestion pipeline (default command if none given)."
     )
-    sync_p.add_argument("--since", type=int, default=7, metavar="DAYS",
-                        help="Lookback window in days (default: 7).")
-    sync_p.add_argument("--dry-run", action="store_true",
-                        help="Do not write files or send notifications.")
+    sync_p.add_argument(
+        "--since", type=int, default=7, metavar="DAYS", help="Lookback window in days (default: 7)."
+    )
+    sync_p.add_argument(
+        "--dry-run", action="store_true", help="Do not write files or send notifications."
+    )
+
+    # doctor
+    sub.add_parser(
+        "doctor",
+        help="Diagnose installation health — config, adapters, secrets, archive.",
+    )
 
     # vocab
     vocab_p = sub.add_parser("vocab", help="Manage the vocabulary of corrections.")
@@ -95,10 +103,10 @@ def _build_parser() -> argparse.ArgumentParser:
     vocab_sub.add_parser("clear", help="Remove every entry from the configured adapter.")
 
     imp_p = vocab_sub.add_parser("import", help="Import entries into the configured adapter.")
-    imp_p.add_argument("kind", choices=["wispr", "yaml"],
-                       help="Importer type.")
-    imp_p.add_argument("source", nargs="?",
-                       help="Source file (for yaml) or leave empty for wispr defaults.")
+    imp_p.add_argument("kind", choices=["wispr", "yaml"], help="Importer type.")
+    imp_p.add_argument(
+        "source", nargs="?", help="Source file (for yaml) or leave empty for wispr defaults."
+    )
 
     exp_p = vocab_sub.add_parser("export", help="Export entries from the configured adapter.")
     exp_p.add_argument("kind", choices=["yaml"], help="Export format.")
@@ -171,10 +179,13 @@ def _cmd_vocab_import(args) -> int:
             print("error: `import yaml` requires a source file path", file=sys.stderr)
             return 2
         import yaml as _yaml
+
         data = _yaml.safe_load(Path(args.source).read_text(encoding="utf-8")) or {}
         if not isinstance(data, dict):
-            print("error: YAML file must be a top-level mapping of phrase -> replacement",
-                  file=sys.stderr)
+            print(
+                "error: YAML file must be a top-level mapping of phrase -> replacement",
+                file=sys.stderr,
+            )
             return 2
         pairs = {str(k): str(v) for k, v in data.items()}
 
@@ -194,6 +205,7 @@ def _cmd_vocab_export(args) -> int:
     adapter = _load_adapter()
     pairs = adapter.load()
     import yaml as _yaml
+
     Path(args.dest).write_text(
         _yaml.safe_dump(pairs, sort_keys=True, allow_unicode=True),
         encoding="utf-8",
@@ -355,7 +367,11 @@ def _cmd_init(args) -> int:
 
     source = args.source
     if not source:
-        source = _prompt_choice("Source", sources.registered(), default="granola") if interactive else "granola"
+        source = (
+            _prompt_choice("Source", sources.registered(), default="granola")
+            if interactive
+            else "granola"
+        )
 
     source_path = args.source_path
     if source == "markdown" and not source_path:
@@ -370,7 +386,11 @@ def _cmd_init(args) -> int:
 
     vocab = args.vocabulary
     if not vocab:
-        vocab = _prompt_choice("Vocabulary", vocabs.registered(), default="sqlite") if interactive else "sqlite"
+        vocab = (
+            _prompt_choice("Vocabulary", vocabs.registered(), default="sqlite")
+            if interactive
+            else "sqlite"
+        )
 
     scope = args.scope
     if not scope:
@@ -419,10 +439,16 @@ def main() -> int:
 
         if command == "sync":
             from meeting_hive.sync import run
+
             since = getattr(args, "since", 7)
             dry_run = getattr(args, "dry_run", False)
             stats = run(since_days=since, dry_run=dry_run)
             return 0 if stats.get("failed", 0) == 0 else 1
+
+        if command == "doctor":
+            from meeting_hive import doctor
+
+            return doctor.run()
 
         if command == "vocab":
             handler = VOCAB_DISPATCH[args.vocab_command]

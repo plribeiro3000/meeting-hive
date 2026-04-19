@@ -43,9 +43,7 @@ class OpenAISummarizer:
     def _get_key(self) -> str:
         key = self._explicit_key or os.environ.get(self._api_key_env)
         if not key:
-            raise SummarizerAuthError(
-                f"{self._api_key_env} not set — check your secrets.env"
-            )
+            raise SummarizerAuthError(f"{self._api_key_env} not set — check your secrets.env")
         return key
 
     def summarize(self, transcript: str, title: str, attendees: list[str]) -> str:
@@ -67,10 +65,13 @@ class OpenAISummarizer:
                 raise SummarizerAuthError(str(e)) from e
             except (openai.RateLimitError, openai.APIStatusError) as e:
                 last_error = e
-                wait = 2 ** attempt
+                wait = 2**attempt
                 log.warning(
                     "OpenAI error (attempt %d/%d): %s — sleeping %ds",
-                    attempt + 1, self._retries, e, wait,
+                    attempt + 1,
+                    self._retries,
+                    e,
+                    wait,
                 )
                 time.sleep(wait)
 

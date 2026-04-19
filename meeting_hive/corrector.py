@@ -48,21 +48,3 @@ def apply_vocabulary(text: str, vocab: dict[str, str]) -> CorrectionResult:
         log.debug("Applied %d corrections across %d phrases", total, len(counts))
 
     return CorrectionResult(text=result, replacements=counts)
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    sample = (
-        "Post Grass is our DB. Cube Or Nets is the orchestrator. "
-        "Super Base Enterprise handles auth, while Super Base is for side projects."
-    )
-    vocab = {
-        "Post Grass": "Postgres",
-        "Cube Or Nets": "Kubernetes",
-        "Super Base": "Supabase",
-        "Super Base Enterprise": "Supabase Enterprise",
-    }
-    result = apply_vocabulary(sample, vocab)
-    print("Input :", sample)
-    print("Output:", result.text)
-    print("Counts:", result.replacements)

@@ -22,8 +22,8 @@ class ConfigError(RuntimeError):
 
 @dataclass
 class Classification:
-    type: str          # client | vendor | internal | investor | community | event
-    entity: str        # canonical entity name (or internal subtype)
+    type: str  # client | vendor | internal | investor | community | event
+    entity: str  # canonical entity name (or internal subtype)
 
 
 @dataclass
@@ -50,7 +50,9 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict:
     # Minimal schema check.
     for key in ("title_patterns", "internal_only", "domain_rules", "email_rules"):
         if key in cfg and not isinstance(cfg[key], (list, dict)):
-            raise ConfigError(f"config.yaml: `{key}` must be a list or object, got {type(cfg[key]).__name__}")
+            raise ConfigError(
+                f"config.yaml: `{key}` must be a list or object, got {type(cfg[key]).__name__}"
+            )
 
     return cfg
 
@@ -114,13 +116,16 @@ def _domain_of(email: str) -> str:
 def suggest_rule(meta: ClassifyMeta, cfg: dict | None = None) -> str:
     """Return a YAML snippet the user can copy into config.yaml for this unclassified meeting."""
     internal_domains = {d.lower() for d in ((cfg or {}).get("internal_domains") or [])}
-    external_domains = sorted({
-        _domain_of(a) for a in meta.attendees
-        if _domain_of(a) and _domain_of(a) not in internal_domains
-    })
+    external_domains = sorted(
+        {
+            _domain_of(a)
+            for a in meta.attendees
+            if _domain_of(a) and _domain_of(a) not in internal_domains
+        }
+    )
     lines = [
         f'  # UNCLASSIFIED: "{meta.title}"',
-        f'  # attendees: {", ".join(meta.attendees) if meta.attendees else "(none)"}',
+        f"  # attendees: {', '.join(meta.attendees) if meta.attendees else '(none)'}",
     ]
     if external_domains:
         lines.append("  # Suggested domain_rules entry(ies):")
@@ -132,26 +137,3 @@ def suggest_rule(meta: ClassifyMeta, cfg: dict | None = None) -> str:
         lines.append("  # No external domains — consider adding a title_patterns entry, or")
         lines.append("  # email_rules for specific gmail contacts.")
     return "\n".join(lines)
-
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(level=logging.INFO)
-    config_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_CONFIG
-    cfg = load_config(config_path)
-    print(f"Loaded config: {len(cfg.get('domain_rules', {}))} domain rules, "
-          f"{len(cfg.get('title_patterns', []))} title patterns, "
-          f"{len(cfg.get('email_rules', {}))} email rules")
-
-    samples = [
-        ClassifyMeta("Integration sync with Acme Brazil", ["alice@acme.com", "me@example.com"]),
-        ClassifyMeta("Founders Friday", ["founder1@example.com", "founder2@example.com"]),
-        ClassifyMeta("Call with New Prospect", ["jane@newprospect.xyz", "me@example.com"]),
-    ]
-    for s in samples:
-        result = classify(s, cfg)
-        if result:
-            print(f"✓ {s.title[:40]:40s} → {result.type}: {result.entity}")
-        else:
-            print(f"✗ {s.title[:40]:40s} → UNCLASSIFIED")
-            print(suggest_rule(s))

@@ -70,10 +70,13 @@ class OllamaSummarizer:
                 ) from e
             except requests.HTTPError as e:
                 last_error = e
-                wait = 2 ** attempt
+                wait = 2**attempt
                 log.warning(
                     "Ollama HTTP error (attempt %d/%d): %s — sleeping %ds",
-                    attempt + 1, self._retries, e, wait,
+                    attempt + 1,
+                    self._retries,
+                    e,
+                    wait,
                 )
                 time.sleep(wait)
 

@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -76,7 +76,7 @@ class MarkdownSource:
         if not self._root.exists():
             raise SourceUnavailable(f"Markdown source path not found: {self._root}")
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
+        cutoff = datetime.now(UTC) - timedelta(days=since_days)
         meetings: list[Meeting] = []
         self._index = {}
 
@@ -186,15 +186,3 @@ def _extract_attendees(fm: dict, preferred_field: str | None) -> list[str]:
             if isinstance(val, str):
                 return [val]
     return []
-
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(level=logging.INFO)
-    root = sys.argv[1] if len(sys.argv) > 1 else "."
-    src = MarkdownSource({"path": root})
-    for m in src.list_meetings(since_days=30):
-        print(
-            f"  {m.created_at.strftime('%Y-%m-%d %H:%M')} | "
-            f"{m.title[:50]:50s} | {len(m.attendees)} attendees"
-        )

@@ -20,7 +20,7 @@
 
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BIN_DIR="$HOME/bin"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/meeting-hive"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/meeting-hive"

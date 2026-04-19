@@ -10,15 +10,19 @@ log = logging.getLogger(__name__)
 
 
 def _attach_file_logger() -> None:
-    """Append-mode file logger so a cron/launchd/systemd run leaves a trail."""
+    """Append-mode file logger so a cron/launchd/systemd run leaves a trail.
+
+    Attaches to the `meeting_hive` logger (not root) so third-party libraries
+    (anthropic, openai, requests) don't dump their own INFO logs into our file.
+    """
     log_path = paths.log_file()
     log_path.parent.mkdir(parents=True, exist_ok=True)
     handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
     handler.setLevel(logging.INFO)
-    logging.getLogger().addHandler(handler)
+    pkg_logger = logging.getLogger("meeting_hive")
+    pkg_logger.setLevel(logging.INFO)
+    pkg_logger.addHandler(handler)
 
 
 def _resolve_source(cfg: dict) -> sources.MeetingSource:

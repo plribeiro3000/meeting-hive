@@ -11,6 +11,7 @@ the other tool's data model, edited via the Wispr UI.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import shutil
 import sqlite3
@@ -52,9 +53,7 @@ class WisprVocabulary:
 
     def load(self) -> dict[str, str]:
         if not self._db_path.exists():
-            log.warning(
-                "Wispr DB not found at %s; returning empty vocabulary", self._db_path
-            )
+            log.warning("Wispr DB not found at %s; returning empty vocabulary", self._db_path)
             return {}
 
         # Wispr may hold a write lock while running — snapshot to /tmp first.
@@ -74,23 +73,11 @@ class WisprVocabulary:
             finally:
                 conn.close()
 
-            vocab = {phrase: replacement for phrase, replacement in rows}
+            vocab = dict(rows)
             log.info("Loaded %d Wispr vocabulary entries", len(vocab))
             return vocab
         finally:
             for suffix in ("", "-wal", "-shm"):
-                candidate = (
-                    tmp_path.with_name(tmp_path.name + suffix) if suffix else tmp_path
-                )
-                try:
+                candidate = tmp_path.with_name(tmp_path.name + suffix) if suffix else tmp_path
+                with contextlib.suppress(FileNotFoundError):
                     candidate.unlink()
-                except FileNotFoundError:
-                    pass
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    vocab = WisprVocabulary().load()
-    for phrase, replacement in sorted(vocab.items()):
-        print(f"  {phrase!r:40s} -> {replacement!r}")
-    print(f"\nTotal: {len(vocab)} entries")
