@@ -43,6 +43,7 @@ dev = [
 
 [project.scripts]
 meeting-hive = "meeting_hive.__main__:main"
+meeting-hive-autocommit = "meeting_hive.autocommit:main"
 
 [project.urls]
 Homepage = "https://github.com/plribeiro3000/meeting-hive"

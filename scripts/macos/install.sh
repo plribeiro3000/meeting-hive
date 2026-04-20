@@ -250,14 +250,15 @@ fi
 ln -s "$REPO/bin/meeting-hive" "$BIN_DIR/meeting-hive"
 ok "Symlinked $BIN_DIR/meeting-hive → $REPO/bin/meeting-hive"
 
-# The autocommit wrapper is what launchd calls — it runs `meeting-hive sync`
-# and then commits any archive changes to a local-only git repo for
-# versioning/rollback. Explicitly not a backup (see README).
+# The autocommit wrapper is a Python entry point shipped with the package,
+# so `pip install -e` above already created it at $REPO/.venv/bin/. launchd
+# calls it to run `meeting-hive sync` and commit any archive changes to a
+# local-only git repo for versioning/rollback — not a backup (see README).
 if [ -L "$BIN_DIR/meeting-hive-autocommit" ] || [ -f "$BIN_DIR/meeting-hive-autocommit" ]; then
   rm -f "$BIN_DIR/meeting-hive-autocommit"
 fi
-ln -s "$REPO/bin/meeting-hive-autocommit" "$BIN_DIR/meeting-hive-autocommit"
-ok "Symlinked $BIN_DIR/meeting-hive-autocommit → $REPO/bin/meeting-hive-autocommit"
+ln -s "$REPO/.venv/bin/meeting-hive-autocommit" "$BIN_DIR/meeting-hive-autocommit"
+ok "Symlinked $BIN_DIR/meeting-hive-autocommit → $REPO/.venv/bin/meeting-hive-autocommit"
 
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
