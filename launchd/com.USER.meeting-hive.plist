@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    launchd agent template for meeting-hive.
+
+    The installer (scripts/install.sh) renders this template with the actual
+    USER, HOME, bin path, and schedule values, and drops it at
+    ~/Library/LaunchAgents/com.<user>.meeting-hive.plist.
+
+    Schedule is set via installer flags: --hour, --minute, --days.
+    Defaults: Monday-Friday at 00:00 local time. Run `./scripts/install.sh --help`.
+    launchd interprets Hour/Minute in the machine's local timezone.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.__USER__.meeting-hive</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__BIN__</string>
+        <string>sync</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <array>
+__SCHEDULE_ENTRIES__
+    </array>
+
+    <!-- Logs live alongside the app's own log file under the XDG state dir,
+         so everything meeting-hive writes is in one place (~/.local/state/meeting-hive/). -->
+    <key>StandardOutPath</key>
+    <string>__HOME__/.local/state/meeting-hive/meeting-hive.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.local/state/meeting-hive/meeting-hive.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

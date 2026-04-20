@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/plribeiro3000/meeting-hive/discussions
+    about: Use Discussions for questions, ideas, or usage help — not bug reports.
+  - name: Security issue
+    url: https://github.com/plribeiro3000/meeting-hive/blob/main/SECURITY.md
+    about: Security vulnerabilities must be reported privately, not in public issues.

@@ -1,0 +1,136 @@
+[project]
+name = "meeting-hive"
+dynamic = ["version"]
+description = "Local-first, AI-queryable meeting archive. Ingests from meeting tools, applies personal vocabulary corrections, and stores in portable markdown."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Paulo Ribeiro", email = "plribeiro3000@gmail.com" },
+]
+requires-python = ">=3.11"
+keywords = ["meetings", "notes", "ai", "transcription", "vocabulary", "markdown"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "anthropic>=0.40.0,<1.0.0",
+    "openai>=1.0.0,<2.0.0",
+    "requests>=2.31.0,<3.0.0",
+    "pyyaml>=6.0,<7.0",
+    "python-dateutil>=2.8.2,<3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "types-requests",
+    "types-pyyaml",
+    "types-python-dateutil",
+]
+
+[project.scripts]
+meeting-hive = "meeting_hive.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/plribeiro3000/meeting-hive"
+Repository = "https://github.com/plribeiro3000/meeting-hive"
+Issues = "https://github.com/plribeiro3000/meeting-hive/issues"
+Changelog = "https://github.com/plribeiro3000/meeting-hive/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "meeting_hive.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["meeting_hive*"]
+
+[tool.setuptools.package-data]
+meeting_hive = ["py.typed"]
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RUF",  # ruff-specific
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "E501",  # line-too-long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults (false positives on Path)
+    "SIM108", # ternary instead of if-else (readability preference)
+    "S101",  # use of `assert` (fine in our internal invariants)
+    "S603",  # subprocess without shell=True (we use list-form args, already safe)
+    "S607",  # starting process with partial path (osascript / notify-send / powershell are OS-provided)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "B011",   # allow `assert` in tests
+    "S101",   # assert in tests is the point
+    "S105",   # hardcoded password strings (test fixtures)
+    "S106",
+    "S108",   # hardcoded tmp_path references in tests
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+files = ["meeting_hive"]
+
+[[tool.mypy.overrides]]
+module = [
+    "anthropic.*",
+    "openai.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:dateutil.*",
+]
