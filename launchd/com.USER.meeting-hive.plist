@@ -16,10 +16,12 @@
     <key>Label</key>
     <string>com.__USER__.meeting-hive</string>
 
+    <!-- Calls the autocommit wrapper, which runs `meeting-hive sync` and then
+         commits any changes in ~/.meeting-notes/ to a local-only git repo.
+         Git here is a versioning/diff tool, not a backup — see README. -->
     <key>ProgramArguments</key>
     <array>
         <string>__BIN__</string>
-        <string>sync</string>
     </array>
 
     <key>EnvironmentVariables</key>

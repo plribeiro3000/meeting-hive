@@ -250,6 +250,15 @@ fi
 ln -s "$REPO/bin/meeting-hive" "$BIN_DIR/meeting-hive"
 ok "Symlinked $BIN_DIR/meeting-hive → $REPO/bin/meeting-hive"
 
+# The autocommit wrapper is what launchd calls — it runs `meeting-hive sync`
+# and then commits any archive changes to a local-only git repo for
+# versioning/rollback. Explicitly not a backup (see README).
+if [ -L "$BIN_DIR/meeting-hive-autocommit" ] || [ -f "$BIN_DIR/meeting-hive-autocommit" ]; then
+  rm -f "$BIN_DIR/meeting-hive-autocommit"
+fi
+ln -s "$REPO/bin/meeting-hive-autocommit" "$BIN_DIR/meeting-hive-autocommit"
+ok "Symlinked $BIN_DIR/meeting-hive-autocommit → $REPO/bin/meeting-hive-autocommit"
+
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) warn "$BIN_DIR is not in your \$PATH. Add it to your shell profile (e.g. ~/.zshrc).";;
@@ -393,7 +402,7 @@ fi
 
 MH_USER="$USER" \
 MH_HOME="$HOME" \
-MH_BIN="${BIN_DIR}/meeting-hive" \
+MH_BIN="${BIN_DIR}/meeting-hive-autocommit" \
 MH_HOUR="$HOUR" \
 MH_MINUTE="$MINUTE" \
 MH_DAYS="$DAYS" \

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# meeting-hive-autocommit — wraps `meeting-hive sync` with local git auto-commit.
+#
+# Purpose: local versioning and diff/rollback of ~/.meeting-notes/. The commits
+# stay on disk — nothing is pushed anywhere. This is NOT a backup strategy;
+# if the disk dies, both the archive and its history die with it. Pair this
+# with Time Machine / Backblaze / restic / equivalent to protect against
+# hardware loss.
+#
+# Behavior:
+#   - First run: initializes the git repo in ~/.meeting-notes/ if absent.
+#   - Every run: calls `meeting-hive sync "$@"`, then commits any changes.
+#   - Empty sync (no file changes) produces no commit.
+#   - --dry-run skips the commit step entirely.
+#
+# Usage is identical to `meeting-hive sync`:
+#   meeting-hive-autocommit --since 7
+#   meeting-hive-autocommit --since 1 --dry-run
+
+set -euo pipefail
+
+NOTES_DIR="$HOME/.meeting-notes"
+
+# Resolve the meeting-hive CLI. PATH first; fall back to the installer symlink.
+if command -v meeting-hive >/dev/null 2>&1; then
+  MEETING_HIVE="$(command -v meeting-hive)"
+else
+  MEETING_HIVE="$HOME/bin/meeting-hive"
+fi
+
+"$MEETING_HIVE" sync "$@"
+
+# --dry-run doesn't touch the archive, so there's nothing to commit.
+for arg in "$@"; do
+  [ "$arg" = "--dry-run" ] && exit 0
+done
+
+mkdir -p "$NOTES_DIR"
+cd "$NOTES_DIR"
+
+if [ ! -d ".git" ]; then
+  git init --quiet --initial-branch=main
+fi
+
+# Ensure a commit identity exists in this repo even if the user has no global
+# git config (common on fresh machines and unattended runs).
+git config user.email >/dev/null 2>&1 || git config user.email "meeting-hive@localhost"
+git config user.name  >/dev/null 2>&1 || git config user.name  "meeting-hive"
+
+git add -A
+if git diff --cached --quiet; then
+  exit 0
+fi
+
+git commit --quiet -m "sync $(date +%Y-%m-%d)"
