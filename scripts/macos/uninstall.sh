@@ -132,6 +132,11 @@ if [ -L "$BIN_DIR/meeting-hive" ] || [ -f "$BIN_DIR/meeting-hive" ]; then
   ok "Removed $BIN_DIR/meeting-hive"
 fi
 
+if [ -L "$BIN_DIR/meeting-hive-autocommit" ] || [ -f "$BIN_DIR/meeting-hive-autocommit" ]; then
+  rm -f "$BIN_DIR/meeting-hive-autocommit"
+  ok "Removed $BIN_DIR/meeting-hive-autocommit"
+fi
+
 # -----------------------------------------------------------------------------
 # 3. --purge: config + data + state
 # -----------------------------------------------------------------------------

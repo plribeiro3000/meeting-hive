@@ -319,13 +319,30 @@ See **[`docs/configuration.md`](docs/configuration.md)** for the full schema inc
 - **Manual run anytime**: `meeting-hive sync --since 1 --verbose`
 - **Dry-run (no writes, no notifications)**: `meeting-hive sync --dry-run --verbose`
 
+## Local history (git)
+
+On macOS, the scheduled run uses a wrapper (`meeting-hive-autocommit`) that commits any archive changes to a local-only git repository under `~/.meeting-notes/.git/` after every sync. Empty syncs produce no commit. Nothing is pushed anywhere — the history lives on your disk.
+
+What this gives you:
+
+- **Daily diff**: `cd ~/.meeting-notes && git log --oneline` shows one entry per sync with changes, `git show <commit>` displays exactly what got written that day.
+- **Rollback**: `git reset --hard <commit>` reverts the archive to any prior sync. If a run writes something wrong, you can undo it without touching the source tool.
+- **Audit**: every change to every file is attributable to a specific sync, so "when did this line appear?" is always answerable via `git blame`.
+
+Linux and Windows users can replicate this with a small shell / PowerShell wrapper around `meeting-hive sync` — see [`docs/scheduling.md`](docs/scheduling.md).
+
+**This is versioning, not backup.** The history lives on the same disk as the archive. If the disk dies, both are gone. See below.
+
 ## Backup
 
-The markdown files on disk are yours; back them up like any other plain-text folder. `meeting-hive` doesn't handle backup. Usual options apply:
+**meeting-hive does not back up your archive, and neither does the local git history described above.** If you care about your meeting notes surviving disk failure, theft, ransomware, or accidental deletion, you are responsible for configuring a backup mechanism. The markdown files in `~/.meeting-notes/` are plain text; any standard tool works:
 
-- **Time Machine** (macOS), **restic / borg / rsnapshot** (anywhere)
-- **Git repo** (public or encrypted via [git-crypt](https://github.com/AGWA/git-crypt) / [age](https://github.com/FiloSottile/age))
-- Cloud sync (iCloud Drive, Dropbox, etc.)
+- **Time Machine** (macOS) — set it up with an external drive and make sure `~/.meeting-notes/` is not excluded.
+- **Backblaze** — continuous off-site backup of your whole Mac; versioned; the archive is covered automatically.
+- **restic / borg / kopia** — client-side encrypted incremental backups to any backend (local disk, S3, Backblaze B2, SFTP). You hold the encryption key; the storage provider only sees opaque blobs.
+- **Cloud sync** (iCloud Drive, Dropbox, OneDrive) — convenient, but note two caveats: (a) macOS only syncs folders placed inside the provider's sync root, which would require moving the archive out of `$HOME`; (b) sync is not backup — if the pipeline writes a corrupted file, it propagates to every synced device.
+
+Pick one and set it up before your first unattended run.
 
 ## What's NOT in scope
 

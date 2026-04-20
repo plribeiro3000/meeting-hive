@@ -4,6 +4,48 @@ meeting-hive is a batch job: you schedule `meeting-hive sync` to run on a cadenc
 
 All examples assume `meeting-hive` is on `PATH`. If you installed via the steps in the README, that means `~/.local/bin/meeting-hive` (Linux) or the equivalent on Windows.
 
+## Local git history (optional, recommended)
+
+The macOS installer schedules a wrapper (`meeting-hive-autocommit`) that runs `meeting-hive sync` and then commits any archive changes to a local-only git repo under `~/.meeting-notes/.git/`. This gives you daily diffs and one-command rollback. See [the README](../README.md#local-history-git) for the rationale and the explicit reminder that git history is not a backup.
+
+Linux and Windows users can replicate the behavior with a tiny wrapper and point their scheduler at it instead of `meeting-hive sync`:
+
+**Linux/macOS shell** — save as `~/.local/bin/meeting-hive-autocommit` and `chmod +x`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+NOTES_DIR="$HOME/.meeting-notes"
+meeting-hive sync "$@"
+for arg in "$@"; do [ "$arg" = "--dry-run" ] && exit 0; done
+mkdir -p "$NOTES_DIR" && cd "$NOTES_DIR"
+[ -d .git ] || git init --quiet --initial-branch=main
+git config user.email >/dev/null 2>&1 || git config user.email "meeting-hive@localhost"
+git config user.name  >/dev/null 2>&1 || git config user.name  "meeting-hive"
+git add -A
+git diff --cached --quiet || git commit --quiet -m "sync $(date +%Y-%m-%d)"
+```
+
+**Windows PowerShell** — save as `meeting-hive-autocommit.ps1`:
+
+```powershell
+param([Parameter(ValueFromRemainingArguments=$true)]$args)
+$NotesDir = Join-Path $env:USERPROFILE ".meeting-notes"
+& meeting-hive sync @args
+if ($args -contains "--dry-run") { exit 0 }
+New-Item -ItemType Directory -Force -Path $NotesDir | Out-Null
+Push-Location $NotesDir
+if (-not (Test-Path ".git")) { git init --quiet --initial-branch=main }
+if (-not (git config user.email)) { git config user.email "meeting-hive@localhost" }
+if (-not (git config user.name))  { git config user.name  "meeting-hive" }
+git add -A
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) { git commit --quiet -m "sync $(Get-Date -Format yyyy-MM-dd)" }
+Pop-Location
+```
+
+In the examples below, swap `meeting-hive sync` for the wrapper if you want the auto-commit behavior.
+
 ## macOS — launchd (handled by the installer)
 
 `./scripts/install.sh` renders a launchd plist and loads it. Default is Mon-Fri midnight local time. To change the schedule:
