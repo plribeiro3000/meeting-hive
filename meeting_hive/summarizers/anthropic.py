@@ -16,7 +16,7 @@ from meeting_hive.summarizers import (
 
 log = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "claude-sonnet-4-5-20251001"
+DEFAULT_MODEL = "sonnet"
 DEFAULT_MAX_TOKENS = 2000
 
 
@@ -24,7 +24,10 @@ class AnthropicSummarizer:
     """Regenerate meeting summaries via Claude (or any Anthropic-compatible endpoint).
 
     Config keys (all optional):
-        model:         Anthropic model ID. Default: claude-sonnet-4-5-20251001.
+        model:         Anthropic model ID or alias. Default: ``sonnet`` (Anthropic's
+                       floating alias to the current-generation Sonnet). Pin to a
+                       specific version (e.g. ``claude-sonnet-4-6``) if you prefer
+                       stable behavior across Anthropic releases.
         max_tokens:    Upper bound on response size. Default: 2000.
         api_key_env:   Env var holding the API key. Default: ANTHROPIC_API_KEY.
         base_url:      Override the API endpoint (e.g. LiteLLM proxy, AWS Bedrock
