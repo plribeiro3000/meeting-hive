@@ -12,7 +12,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from meeting_hive import classifier, migrations, paths, sources, summarizers, vocabs
+from meeting_hive import classifier, migrations, paths, secrets, sources, summarizers, vocabs
 
 OK = "✓"
 WARN = "⚠"
@@ -156,6 +156,10 @@ def _check_archive() -> Check:
 
 def run() -> int:
     """Run all checks. Return 0 on success, 1 on any failure."""
+    # Load secrets before the summarizer check so env-var presence reflects
+    # what `meeting-hive sync` would actually see.
+    secrets.load_secrets()
+
     checks: list[Check] = []
 
     cfg_check, cfg = _check_config()

@@ -19,7 +19,16 @@ import logging
 import sys
 from pathlib import Path
 
-from meeting_hive import __version__, classifier, migrations, paths, sources, summarizers, vocabs
+from meeting_hive import (
+    __version__,
+    classifier,
+    migrations,
+    paths,
+    secrets,
+    sources,
+    summarizers,
+    vocabs,
+)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -435,6 +444,11 @@ def main() -> int:
 
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=level, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+    # Auto-load secrets.env into os.environ so API-key-reading SDKs (anthropic,
+    # openai, requests → Fathom) see the values. Safe to call on every
+    # invocation — no-op when the file is absent.
+    secrets.load_secrets()
 
     # Default command: sync (backwards compat with existing launchd plist).
     command = args.command or "sync"
