@@ -158,7 +158,7 @@ Claude family via the Anthropic API.
 summarizer:
   adapter: anthropic
   config:
-    model: claude-sonnet-4-5-20251001   # default
+    model: sonnet                        # default; alias that tracks the latest Sonnet
     max_tokens: 2000                     # default
     api_key_env: ANTHROPIC_API_KEY       # default; env var sourced from secrets.env
     base_url: https://api.anthropic.com  # optional override (LiteLLM proxy, Bedrock, etc.)
