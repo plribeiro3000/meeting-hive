@@ -1,9 +1,8 @@
 """Load secrets.env KEY=value pairs into ``os.environ`` on CLI startup.
 
-Replaces the `bin/meeting-hive` bash wrapper's ``set -a; source secrets.env``
-for users installing meeting-hive via ``pip`` or ``pipx`` — those skip the
-wrapper and call the Python entry point directly, so this module restores
-the same behavior natively.
+Called by the CLI entry point so that adapters reading environment variables
+(Anthropic / OpenAI SDKs, Fathom requests) see the user-managed secrets
+file without the caller having to source it manually.
 
 File format (dotenv-style, minimal):
 

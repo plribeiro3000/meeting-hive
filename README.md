@@ -114,7 +114,17 @@ Adding a new adapter is a single file + one line in the built-in registry. Adapt
 
 ## Install
 
+Installing the Python package gives you the `meeting-hive` and `meeting-hive-autocommit` CLIs on your `PATH`:
+
+```bash
+pipx install meeting-hive
+```
+
+That's enough for manual runs on any platform. Scheduling (macOS launchd / Linux systemd / Windows Task Scheduler) is a separate step — see below.
+
 ### macOS (launchd)
+
+For automatic nightly runs, clone the repo and run the macOS installer. It only handles the launchd registration; the Python package still comes from `pipx`.
 
 ```bash
 git clone https://github.com/plribeiro3000/meeting-hive.git ~/Projects/meeting-hive
@@ -124,8 +134,7 @@ cd ~/Projects/meeting-hive
 
 The installer:
 
-- Creates a Python venv inside the repo (`.venv/`)
-- Symlinks the `meeting-hive` CLI into `~/bin/`
+- Verifies `meeting-hive-autocommit` is on `PATH` (from `pipx` / `pip`). If not, exits with the command to run.
 - Asks for adapter choices (summarizer, source, vocabulary), scope, and internal email domains
 - Runs `meeting-hive init` with your answers to generate `config.yaml` at the standard path (first run only)
 - Prompts for the summarizer's API key if it needs one (Anthropic / OpenAI) and writes it to `secrets.env` (chmod 600). Ollama needs no key.
@@ -186,29 +195,7 @@ Weekdays follow launchd's convention: `0` or `7` = Sunday, `1` = Monday, ..., `6
 
 ### Linux & Windows
 
-No dedicated installer yet. Install the package manually.
-
-**Linux**:
-
-```bash
-git clone https://github.com/plribeiro3000/meeting-hive.git
-cd meeting-hive
-python3 -m venv .venv
-.venv/bin/pip install -e .
-ln -s "$PWD/bin/meeting-hive" ~/.local/bin/meeting-hive   # or wherever your PATH points
-```
-
-**Windows** (PowerShell):
-
-```powershell
-git clone https://github.com/plribeiro3000/meeting-hive.git
-cd meeting-hive
-python -m venv .venv
-.venv\Scripts\pip install -e .
-# Add <repo>\bin to PATH, or copy bin\meeting-hive.cmd into a PATH dir.
-```
-
-The `bin\meeting-hive.cmd` wrapper is the Windows equivalent of the Linux/macOS bash shim — it loads `secrets.env`, bootstraps the venv on first run if needed, and invokes the Python module with your arguments.
+No dedicated scheduling installer yet. The `pipx install meeting-hive` step above gives you the CLIs; scheduling is up to you (systemd / cron / Task Scheduler — recipes in [`docs/scheduling.md`](docs/scheduling.md)).
 
 Generate `config.yaml` with interactive prompts:
 
@@ -241,7 +228,7 @@ To uninstall on Linux / Windows there's no dedicated script yet. Manual steps:
 ```bash
 systemctl --user disable --now meeting-hive.timer
 rm ~/.config/systemd/user/meeting-hive.{service,timer}
-rm ~/.local/bin/meeting-hive
+pipx uninstall meeting-hive
 rm -rf ~/.config/meeting-hive ~/.local/share/meeting-hive ~/.local/state/meeting-hive
 # ~/.meeting-notes/ is your archive — delete separately only if you really want to.
 ```
@@ -250,6 +237,7 @@ rm -rf ~/.config/meeting-hive ~/.local/share/meeting-hive ~/.local/state/meeting
 
 ```powershell
 Unregister-ScheduledTask -TaskName "meeting-hive sync" -Confirm:$false
+pipx uninstall meeting-hive
 Remove-Item $env:APPDATA\meeting-hive -Recurse
 Remove-Item $env:LOCALAPPDATA\meeting-hive -Recurse
 # %USERPROFILE%\.meeting-notes is your archive — delete separately only if you really want to.

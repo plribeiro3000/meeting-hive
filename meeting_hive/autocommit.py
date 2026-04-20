@@ -20,7 +20,12 @@ from pathlib import Path
 def main() -> int:
     args = sys.argv[1:]
 
-    sync_rc = subprocess.run(["meeting-hive", "sync", *args], check=False).returncode
+    # Resolve the sibling meeting-hive entry point by absolute path. launchd
+    # runs this wrapper with a minimal PATH that does not include the pipx
+    # venv's bin dir, so relying on name-only lookup breaks the scheduled run.
+    meeting_hive_bin = str(Path(sys.executable).parent / "meeting-hive")
+
+    sync_rc = subprocess.run([meeting_hive_bin, "sync", *args], check=False).returncode
     if sync_rc != 0:
         return sync_rc
 
