@@ -321,7 +321,7 @@ See **[`docs/configuration.md`](docs/configuration.md)** for the full schema inc
 
 ## Local history (git)
 
-On macOS, the scheduled run uses a wrapper (`meeting-hive-autocommit`) that commits any archive changes to a local-only git repository under `~/.meeting-notes/.git/` after every sync. Empty syncs produce no commit. Nothing is pushed anywhere — the history lives on your disk.
+Installing the package ships a second command alongside the main CLI: `meeting-hive-autocommit`. It runs `meeting-hive sync` and then commits any archive changes to a local-only git repository under `~/.meeting-notes/.git/` after every sync. Empty syncs produce no commit. Nothing is pushed anywhere — the history lives on your disk.
 
 What this gives you:
 
@@ -329,7 +329,7 @@ What this gives you:
 - **Rollback**: `git reset --hard <commit>` reverts the archive to any prior sync. If a run writes something wrong, you can undo it without touching the source tool.
 - **Audit**: every change to every file is attributable to a specific sync, so "when did this line appear?" is always answerable via `git blame`.
 
-Linux and Windows users can replicate this with a small shell / PowerShell wrapper around `meeting-hive sync` — see [`docs/scheduling.md`](docs/scheduling.md).
+On macOS, the installer schedules `meeting-hive-autocommit` automatically. Linux and Windows users point their scheduler at `meeting-hive-autocommit` instead of `meeting-hive sync` — see [`docs/scheduling.md`](docs/scheduling.md).
 
 **This is versioning, not backup.** The history lives on the same disk as the archive. If the disk dies, both are gone. See below.
 
