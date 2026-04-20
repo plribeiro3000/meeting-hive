@@ -2,16 +2,18 @@
 # meeting-hive installer — idempotent setup for macOS.
 #
 # What it does:
-#   1. Verifies prereqs (macOS, Python 3.11+)
-#   2. Creates a Python venv in the repo (.venv/)
-#   3. Installs the package editable
-#   4. Symlinks ~/bin/meeting-hive → <repo>/bin/meeting-hive
-#   5. Collects adapter choices + scope + internal domains (flags preferred,
+#   1. Verifies prereqs (macOS, Python 3.11+, meeting-hive-autocommit on PATH)
+#   2. Collects adapter choices + scope + internal domains (flags preferred,
 #      TTY prompts as fallback, sensible defaults when non-interactive)
-#   6. Calls `meeting-hive init` to generate config.yaml
-#   7. Prompts for the summarizer's API key (unless --skip-secrets), writes to
+#   3. Calls `meeting-hive init` to generate config.yaml
+#   4. Prompts for the summarizer's API key (unless --skip-secrets), writes to
 #      ~/.config/meeting-hive/secrets.env (chmod 600)
-#   8. Renders the launchd plist (schedule from --hour/--minute/--days) and loads it
+#   5. Renders the launchd plist pointing at the autocommit binary (schedule
+#      from --hour/--minute/--days) and loads it
+#
+# Prerequisite: install meeting-hive itself first with `pipx install meeting-hive`.
+# This script does not install the Python package — it only handles the
+# macOS-specific launchd registration.
 #
 # Interactive mode: run with `--summarizer NAME` (or no flags) and the
 # installer prompts for the rest. Unattended mode (for AI agents / CI): pass
@@ -21,7 +23,6 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-BIN_DIR="$HOME/bin"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/meeting-hive"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/meeting-hive"
 LAUNCH_DIR="$HOME/Library/LaunchAgents"
@@ -224,49 +225,21 @@ ok "Python: $($PYTHON --version) ($PYTHON)"
 # raises a clear error if its backend isn't available. No per-app prechecks here.
 
 # -----------------------------------------------------------------------------
-# 2. Venv + package install
+# 2. Locate meeting-hive-autocommit
 # -----------------------------------------------------------------------------
-log "Setting up venv..."
-if [ ! -d "$REPO/.venv" ]; then
-  "$PYTHON" -m venv "$REPO/.venv"
-  ok "Created venv at $REPO/.venv"
-else
-  ok "Venv already exists"
+# Requires meeting-hive installed on PATH (via pipx or pip). Installing the
+# Python package is the user's job — this script owns only the macOS
+# launchd registration.
+log "Locating meeting-hive-autocommit..."
+if ! AUTOCOMMIT_BIN=$(command -v meeting-hive-autocommit 2>/dev/null); then
+  err "meeting-hive-autocommit not on PATH. Install it first:"
+  err "  pipx install meeting-hive"
+  exit 1
 fi
-
-"$REPO/.venv/bin/pip" install --quiet --upgrade pip
-"$REPO/.venv/bin/pip" install --quiet -e "$REPO"
-ok "Installed meeting-hive package (editable)"
+ok "Found $AUTOCOMMIT_BIN"
 
 # -----------------------------------------------------------------------------
-# 3. Symlink CLI
-# -----------------------------------------------------------------------------
-log "Linking CLI to $BIN_DIR/meeting-hive..."
-mkdir -p "$BIN_DIR"
-if [ -L "$BIN_DIR/meeting-hive" ] || [ -f "$BIN_DIR/meeting-hive" ]; then
-  # Replace if it's pointing somewhere else or is a stale copy.
-  rm -f "$BIN_DIR/meeting-hive"
-fi
-ln -s "$REPO/bin/meeting-hive" "$BIN_DIR/meeting-hive"
-ok "Symlinked $BIN_DIR/meeting-hive → $REPO/bin/meeting-hive"
-
-# The autocommit wrapper is a Python entry point shipped with the package,
-# so `pip install -e` above already created it at $REPO/.venv/bin/. launchd
-# calls it to run `meeting-hive sync` and commit any archive changes to a
-# local-only git repo for versioning/rollback — not a backup (see README).
-if [ -L "$BIN_DIR/meeting-hive-autocommit" ] || [ -f "$BIN_DIR/meeting-hive-autocommit" ]; then
-  rm -f "$BIN_DIR/meeting-hive-autocommit"
-fi
-ln -s "$REPO/.venv/bin/meeting-hive-autocommit" "$BIN_DIR/meeting-hive-autocommit"
-ok "Symlinked $BIN_DIR/meeting-hive-autocommit → $REPO/.venv/bin/meeting-hive-autocommit"
-
-case ":$PATH:" in
-  *":$BIN_DIR:"*) ;;
-  *) warn "$BIN_DIR is not in your \$PATH. Add it to your shell profile (e.g. ~/.zshrc).";;
-esac
-
-# -----------------------------------------------------------------------------
-# 4. Config + secrets
+# 3. Config + secrets
 # -----------------------------------------------------------------------------
 log "Setting up config directory..."
 mkdir -p "$CONFIG_DIR"
@@ -350,7 +323,7 @@ if [ ! -f "$CONFIG_DIR/config.yaml" ]; then
   [ -n "$SOURCE_PATH" ] && INIT_ARGS+=(--source-path "$SOURCE_PATH")
   [ -n "$INTERNAL_DOMAINS" ] && INIT_ARGS+=(--internal-domains "$INTERNAL_DOMAINS")
 
-  "$REPO/.venv/bin/meeting-hive" init "${INIT_ARGS[@]}"
+  meeting-hive init "${INIT_ARGS[@]}"
   ok "Generated $CONFIG_DIR/config.yaml"
 else
   ok "$CONFIG_DIR/config.yaml already exists (untouched). Re-run with \`meeting-hive init --force\` to regenerate."
@@ -383,7 +356,7 @@ case "$SOURCE" in
 esac
 
 # -----------------------------------------------------------------------------
-# 5. launchd agent
+# 4. launchd agent
 # -----------------------------------------------------------------------------
 log "Configuring launchd agent..."
 mkdir -p "$LAUNCH_DIR"
@@ -403,13 +376,13 @@ fi
 
 MH_USER="$USER" \
 MH_HOME="$HOME" \
-MH_BIN="${BIN_DIR}/meeting-hive-autocommit" \
+MH_BIN="$AUTOCOMMIT_BIN" \
 MH_HOUR="$HOUR" \
 MH_MINUTE="$MINUTE" \
 MH_DAYS="$DAYS" \
 MH_TEMPLATE="$TEMPLATE" \
 MH_OUTPUT="$PLIST_PATH" \
-"$REPO/.venv/bin/python" - <<'PYEOF'
+"$PYTHON" - <<'PYEOF'
 import os, re, sys
 
 hour = int(os.environ["MH_HOUR"])

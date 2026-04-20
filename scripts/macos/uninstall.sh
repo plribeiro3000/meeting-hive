@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # meeting-hive uninstaller (macOS) — reverses what scripts/install.sh did.
 #
-# Default behavior: removes launchd agent, plist, and CLI symlink. Leaves
-# every byte of user data intact.
+# Default behavior: removes launchd agent and plist. Leaves every byte of
+# user data intact. Does not uninstall the meeting-hive Python package —
+# use `pipx uninstall meeting-hive` for that.
 #
 # Flags:
 #   --purge            Also deletes config + vocabulary DB + logs.
@@ -15,13 +16,10 @@
 #                      Does NOT bypass the --nuke-notes confirmation.
 #   -h, --help         Show this help.
 #
-# The venv inside the repo (.venv/) is not touched — delete your clone of the
-# repository to remove it.
 
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-BIN_DIR="$HOME/bin"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/meeting-hive"
 DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/meeting-hive"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/meeting-hive"
@@ -53,7 +51,9 @@ Usage: uninstall.sh [OPTIONS]
 Default behavior removes:
   - the launchd agent (bootout)
   - the launchd plist file
-  - the CLI symlink in ~/bin/
+
+The meeting-hive Python package is not touched — uninstall it separately
+with `pipx uninstall meeting-hive` if you want to remove it fully.
 
 Options:
   --purge             Also delete config + vocabulary DB + logs
@@ -68,12 +68,8 @@ Options:
                       bypass the --nuke-notes confirmation.
   -h, --help          Show this help.
 
-The venv inside the repo (.venv/) is not touched — delete your clone of the
-repository to remove it.
-
 Any invocation without --help is destructive by design (unloads the launchd
-agent, removes the plist, removes the symlink). There is no dry-run; back up
-first if unsure.
+agent, removes the plist). There is no dry-run; back up first if unsure.
 EOF
 }
 
@@ -125,20 +121,7 @@ if [ -f "$PLIST_PATH" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# 2. CLI symlink
-# -----------------------------------------------------------------------------
-if [ -L "$BIN_DIR/meeting-hive" ] || [ -f "$BIN_DIR/meeting-hive" ]; then
-  rm -f "$BIN_DIR/meeting-hive"
-  ok "Removed $BIN_DIR/meeting-hive"
-fi
-
-if [ -L "$BIN_DIR/meeting-hive-autocommit" ] || [ -f "$BIN_DIR/meeting-hive-autocommit" ]; then
-  rm -f "$BIN_DIR/meeting-hive-autocommit"
-  ok "Removed $BIN_DIR/meeting-hive-autocommit"
-fi
-
-# -----------------------------------------------------------------------------
-# 3. --purge: config + data + state
+# 2. --purge: config + data + state
 # -----------------------------------------------------------------------------
 if [ "$PURGE" = "1" ]; then
   echo
@@ -156,7 +139,7 @@ if [ "$PURGE" = "1" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# 4. --nuke-notes: the archive itself (DATA LOSS — extra confirmation required)
+# 3. --nuke-notes: the archive itself (DATA LOSS — extra confirmation required)
 # -----------------------------------------------------------------------------
 if [ "$NUKE_NOTES" = "1" ]; then
   echo

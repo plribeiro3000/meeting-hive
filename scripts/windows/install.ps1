@@ -11,9 +11,7 @@ meeting-hive: Windows installer is not implemented yet.
 Until a dedicated installer lands, follow the manual steps:
 
   1. Install the package:
-       python -m venv .venv
-       .venv\Scripts\pip install -e .
-       # Add <repo>\bin to PATH so bin\meeting-hive.cmd is reachable.
+       pipx install meeting-hive
 
   2. Generate config:
        meeting-hive init

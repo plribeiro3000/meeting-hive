@@ -2,12 +2,12 @@
 <!--
     launchd agent template for meeting-hive.
 
-    The installer (scripts/install.sh) renders this template with the actual
-    USER, HOME, bin path, and schedule values, and drops it at
+    Rendered by scripts/macos/install.sh with the actual USER, HOME,
+    autocommit binary path, and schedule values, then dropped at
     ~/Library/LaunchAgents/com.<user>.meeting-hive.plist.
 
     Schedule is set via installer flags: --hour, --minute, --days.
-    Defaults: Monday-Friday at 00:00 local time. Run `./scripts/install.sh --help`.
+    Defaults: Monday-Friday at 00:00 local time. Run `./scripts/macos/install.sh --help`.
     launchd interprets Hour/Minute in the machine's local timezone.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
