@@ -307,6 +307,26 @@ See **[`docs/configuration.md`](docs/configuration.md)** for the full schema inc
 - **Manual run anytime**: `meeting-hive sync --since 1 --verbose`
 - **Dry-run (no writes, no notifications)**: `meeting-hive sync --dry-run --verbose`
 
+## Troubleshooting
+
+When a scheduled sync fails, the launchd / cron output goes to:
+
+- **macOS / Linux** — `~/.local/state/meeting-hive/meeting-hive.err.log` (stderr) and `meeting-hive.out.log` (stdout). The path follows `$XDG_STATE_HOME/meeting-hive/` if `XDG_STATE_HOME` is set.
+- **Windows** — see Task Scheduler history.
+
+Read the `.err.log` first; that is where summarizer or vocabulary failures surface.
+
+### Auth and billing errors
+
+Auth failure and billing failure look different in the log — and the shape varies per provider:
+
+- **`401 Unauthorized`** (any provider) — the API key is missing or invalid. Check `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` in `secrets.env`.
+- **Anthropic out of credits** — `400 invalid_request_error` with message *"Your credit balance is too low to access the Anthropic API."* Add credits at [console.anthropic.com](https://console.anthropic.com) → Plans & Billing.
+- **OpenAI out of credits** — `429` with error type `insufficient_quota`. Add credits at [platform.openai.com](https://platform.openai.com) → Billing.
+- **Ollama** — runs locally, no auth, no billing.
+
+The Anthropic API billing rail is independent from any Claude Code or Claude.ai subscription on the same account; API usage requires its own credits on the Anthropic Console.
+
 ## Local history (git)
 
 Installing the package ships a second command alongside the main CLI: `meeting-hive-autocommit`. It runs `meeting-hive sync` and then commits any archive changes to a local-only git repository under `~/.meeting-notes/.git/` after every sync. Empty syncs produce no commit. Nothing is pushed anywhere — the history lives on your disk.
