@@ -95,6 +95,11 @@ def run(since_days: int = 7, dry_run: bool = False) -> dict:
         if not dry_run:
             notify.notify("meeting-hive", f"❌ source adapter error: {e}")
         return {**stats, "failed": 1}
+    except sources.SourceAuthError as e:
+        log.error("Source not configured: %s", e)
+        if not dry_run:
+            notify.notify("meeting-hive", f"❌ {e}")
+        return {**stats, "failed": 1}
 
     try:
         vocab_adapter = _resolve_vocab(cfg)
@@ -171,6 +176,7 @@ def run(since_days: int = 7, dry_run: bool = False) -> dict:
                 transcript=transcript_fixed,
                 title=m.title,
                 attendees=m.attendees,
+                reference_summary=m.reference_summary,
             )
         except summarizers.SummarizerAuthError as e:
             log.error("Summarizer auth failed: %s", e)

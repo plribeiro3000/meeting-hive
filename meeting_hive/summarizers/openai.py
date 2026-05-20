@@ -46,10 +46,16 @@ class OpenAISummarizer:
             raise SummarizerAuthError(f"{self._api_key_env} not set — check your secrets.env")
         return key
 
-    def summarize(self, transcript: str, title: str, attendees: list[str]) -> str:
+    def summarize(
+        self,
+        transcript: str,
+        title: str,
+        attendees: list[str],
+        reference_summary: str | None = None,
+    ) -> str:
         import openai
 
-        prompt = format_prompt(transcript, title, attendees)
+        prompt = format_prompt(transcript, title, attendees, reference_summary)
         client = openai.OpenAI(api_key=self._get_key(), base_url=self._base_url)
 
         last_error: Exception | None = None

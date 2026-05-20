@@ -49,10 +49,16 @@ class AnthropicSummarizer:
             raise SummarizerAuthError(f"{self._api_key_env} not set — check your secrets.env")
         return key
 
-    def summarize(self, transcript: str, title: str, attendees: list[str]) -> str:
+    def summarize(
+        self,
+        transcript: str,
+        title: str,
+        attendees: list[str],
+        reference_summary: str | None = None,
+    ) -> str:
         import anthropic
 
-        prompt = format_prompt(transcript, title, attendees)
+        prompt = format_prompt(transcript, title, attendees, reference_summary)
         client = anthropic.Anthropic(api_key=self._get_key(), base_url=self._base_url)
 
         last_error: Exception | None = None

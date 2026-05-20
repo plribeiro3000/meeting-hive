@@ -42,8 +42,14 @@ class OllamaSummarizer:
         self._timeout = int(cfg.get("timeout", 300))
         self._retries = int(cfg.get("retries", 3))
 
-    def summarize(self, transcript: str, title: str, attendees: list[str]) -> str:
-        prompt = format_prompt(transcript, title, attendees)
+    def summarize(
+        self,
+        transcript: str,
+        title: str,
+        attendees: list[str],
+        reference_summary: str | None = None,
+    ) -> str:
+        prompt = format_prompt(transcript, title, attendees, reference_summary)
         url = f"{self._base_url}/api/chat"
         body = {
             "model": self._model,
