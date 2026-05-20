@@ -96,7 +96,10 @@ class GranolaSource:
 
     def list_meetings(self, since_days: int) -> list[Meeting]:
         cutoff = datetime.now(UTC) - timedelta(days=since_days)
-        params: dict[str, Any] = {"created_after": cutoff.isoformat()}
+        # Granola's /v1/notes rejects ISO with microseconds and +00:00 offset
+        # (returns 400). Their docs example uses the Zulu-suffixed RFC 3339
+        # form — second precision with a literal "Z".
+        params: dict[str, Any] = {"created_after": cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")}
         cursor: str | None = None
 
         # GET /v1/notes only returns id/title/owner/created_at — no attendees,

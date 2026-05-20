@@ -5,11 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-05-20
 
 ### Added
 
-- Troubleshooting section in README
+- Fail-fast abort when the Granola API key is missing
+- Granola API key setup guide in the README
+- Granola summary used as reference draft for the AI summarizer
+- Troubleshooting section in the README
+
+### Changed
+
+- **BREAKING** — Granola source now uses the official API and requires a Business or Enterprise plan
+
+### Fixed
+
+- Granola list endpoint timestamp format
+
+### Removed
+
+- Granola local-cache and stored-token paths
 
 ## [1.1.4] - 2026-04-20
 

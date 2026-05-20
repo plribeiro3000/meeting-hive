@@ -13,6 +13,8 @@ Runs on macOS, Linux, and Windows via an adapter architecture: you pick which me
 
 **Platform support:** macOS is first-class (dedicated installer under `scripts/macos/`). Linux and Windows are documented with manual setup recipes — see [`docs/scheduling.md`](docs/scheduling.md). Dedicated installers for both are tracked as [good first issues](https://github.com/plribeiro3000/meeting-hive/issues).
 
+> **v2.0.0 update — Granola source now requires a paid plan.** The `granola` source uses Granola's official REST API. A Granola **Business or Enterprise** subscription is required to create the necessary API key — the Free and Pro tiers do not expose the API. The previous local-cache path no longer works on current Granola versions. If you used `meeting-hive` 1.x and the `granola` source, generate an API key and add `GRANOLA_API_KEY` to `secrets.env` — see [Granola source — generate an API key](#granola-source--generate-an-api-key).
+
 ---
 
 ## Why this exists
