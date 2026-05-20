@@ -42,16 +42,31 @@ Write EXACTLY in this structure, with no text before or after:
 If there are no clear Action Items, omit the entire section. Topics in "Key Points" should reflect the logical blocks of the conversation (2-5 topics). Don't invent attendees or facts — only what was discussed in the transcript.
 
 Respond in the same language as the transcript.
-
+{reference_summary_block}
 # Transcript
 
 {transcript}
 """
 
+REFERENCE_SUMMARY_BLOCK = """
+# Reference draft (from the source tool)
+
+The source tool produced the following draft summary. Treat it as a starting point — verify each claim against the transcript below, fill in anything it missed, and correct anything it got wrong. Do not copy it verbatim; the final summary must follow the format above.
+
+{reference_summary}
+"""
+
 
 @runtime_checkable
 class Summarizer(Protocol):
-    def summarize(self, transcript: str, title: str, attendees: list[str]) -> str: ...
+    def summarize(
+        self,
+        transcript: str,
+        title: str,
+        attendees: list[str],
+        reference_summary: str | None = None,
+    ) -> str:
+        """Return a meeting summary built from the transcript."""
 
 
 class SummarizerError(RuntimeError):
@@ -92,13 +107,24 @@ def registered() -> list[str]:
     return sorted(_BUILTINS)
 
 
-def format_prompt(transcript: str, title: str, attendees: list[str]) -> str:
+def format_prompt(
+    transcript: str,
+    title: str,
+    attendees: list[str],
+    reference_summary: str | None = None,
+) -> str:
     """Apply the canonical prompt template. Shared by every adapter so the
     output shape stays consistent across backends."""
+    ref_block = (
+        REFERENCE_SUMMARY_BLOCK.format(reference_summary=reference_summary)
+        if reference_summary
+        else ""
+    )
     return PROMPT_TEMPLATE.format(
         title=title,
         attendees=", ".join(attendees) if attendees else "(not listed)",
         transcript=transcript,
+        reference_summary_block=ref_block,
     )
 
 

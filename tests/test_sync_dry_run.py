@@ -34,8 +34,8 @@ class _StubSummarizer:
         self._text = text
         self.calls = []
 
-    def summarize(self, transcript, title, attendees):
-        self.calls.append((transcript, title, list(attendees)))
+    def summarize(self, transcript, title, attendees, reference_summary=None):
+        self.calls.append((transcript, title, list(attendees), reference_summary))
         return self._text
 
 

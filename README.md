@@ -94,7 +94,7 @@ Built-in adapters:
 
 | Axis | Adapter | Notes |
 |---|---|---|
-| **Source** | `granola` | [Granola](https://granola.ai) local cache + REST fallback. macOS today; Windows when Granola ships a Windows client. |
+| **Source** | `granola` | [Granola](https://granola.ai) via its [public REST API](https://docs.granola.ai/introduction). Cross-platform. Requires a **Business or Enterprise** Granola plan and `GRANOLA_API_KEY` — see [Granola source — generate an API key](#granola-source--generate-an-api-key) below. |
 | **Source** | `fathom` | [Fathom](https://fathom.ai) via its [public REST API](https://developers.fathom.ai/). Cross-platform. Requires `FATHOM_API_KEY`. |
 | **Source** | `markdown` | Generic — reads meetings from a directory of YAML-frontmatter `.md` files. Any tool that exports markdown. Cross-platform. |
 | **Vocabulary** | `wispr` | Read-only wrapper over the [Wispr Flow](https://wisprflow.ai) dictation dictionary (macOS / Windows). Use if you already maintain a vocab there. |
@@ -109,8 +109,32 @@ Adding a new adapter is a single file + one line in the built-in registry. Adapt
 
 - **Python 3.11+**
 - **A summarizer backend** — an Anthropic or OpenAI API key, OR a local [Ollama](https://ollama.com) server with at least one model pulled
-- **A source** — one of the supported adapters set up (Granola signed in, a Fathom API key, or any tool that can write markdown into a directory)
+- **A source** — one of the supported adapters set up:
+  - `granola` — a **Granola Business or Enterprise plan** + a `GRANOLA_API_KEY` (see [Granola source — generate an API key](#granola-source--generate-an-api-key))
+  - `fathom` — a Fathom account + a `FATHOM_API_KEY`
+  - `markdown` — any tool that exports meetings as YAML-frontmatter `.md` files into a directory
 - **A vocabulary source** (optional) — leave `sqlite` as the default and populate it via CLI, or point to Wispr Flow
+
+## Granola source — generate an API key
+
+The `granola` source calls the [Granola public REST API](https://docs.granola.ai/introduction). Setup is one-time per workstation:
+
+1. **You need a Granola Business or Enterprise plan.** The Personal API key (the one that covers notes you own and notes shared with you, including private folders) is only available on the Business and Enterprise tiers. The free and Pro tiers do not expose the API.
+2. Open the Granola **desktop app** → **Settings** → **Connectors** → **API keys**.
+3. Click **Generate API Key**, pick **Personal API (Beta)**, and confirm. Personal API covers `Notes you own`, `Notes directly shared with you`, and `Notes in private folders shared with you` — that is what `meeting-hive` needs. (The Enterprise API option only covers `Team space` notes and explicitly cannot access private notes.)
+4. **Copy the `grn_...` key shown — it is displayed once.** If you close the dialog without copying it, delete the key from the list and generate a new one.
+5. Put it in `secrets.env` (in addition to your summarizer key):
+
+   ```bash
+   echo 'GRANOLA_API_KEY=grn_...' >> ~/.config/meeting-hive/secrets.env
+   chmod 600 ~/.config/meeting-hive/secrets.env
+   ```
+
+   On Windows the file lives at `%APPDATA%\meeting-hive\secrets.env`.
+
+If you were using `meeting-hive` 1.1.4 or earlier with the `granola` source, the file-cache path is no longer functional — Granola encrypted its local store. The REST API is now the only supported path; the macOS-only restriction from the cache era is gone, and the adapter runs anywhere Granola runs.
+
+Rate limits on the Granola API are 25 requests per 5s burst / 5 requests/s sustained (300/min), well above what a daily personal sync consumes.
 
 ## Install
 
@@ -160,6 +184,7 @@ After the install finishes, the user (not the agent) runs:
 
 ```bash
 echo 'ANTHROPIC_API_KEY=sk-...' >> ~/.config/meeting-hive/secrets.env
+echo 'GRANOLA_API_KEY=grn_...' >> ~/.config/meeting-hive/secrets.env   # if source = granola
 chmod 600 ~/.config/meeting-hive/secrets.env
 ```
 
@@ -217,6 +242,7 @@ If your summarizer needs an API key, add it to the secrets file:
 
 ```
 ANTHROPIC_API_KEY=sk-...      # or OPENAI_API_KEY=...
+GRANOLA_API_KEY=grn_...       # required when source = granola
 ```
 
 Then schedule `meeting-hive sync` — see **[`docs/scheduling.md`](docs/scheduling.md)** for systemd / cron / Task Scheduler recipes.

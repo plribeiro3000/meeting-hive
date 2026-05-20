@@ -28,6 +28,7 @@ class Meeting:
     attendees: list[str]
     created_at: datetime
     duration_seconds: int | None = None
+    reference_summary: str | None = None
 
 
 @runtime_checkable
