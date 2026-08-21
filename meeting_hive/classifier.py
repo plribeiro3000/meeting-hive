@@ -80,7 +80,8 @@ def classify(meta: ClassifyMeta, cfg: dict) -> Classification | None:
     internal_domains = {d.lower() for d in (cfg.get("internal_domains") or [])}
     internal_cfg = cfg.get("internal_only") or {}
     external = [a for a in attendees if _domain_of(a) not in internal_domains]
-    if attendees and internal_domains and not external:
+    # A lone attendee means the source under-reported attendance — not an internal meeting.
+    if len(attendees) > 1 and internal_domains and not external:
         subtype = internal_cfg.get("default_subtype", "alignment")
         for hint in internal_cfg.get("title_hints") or []:
             pat = hint.get("match")

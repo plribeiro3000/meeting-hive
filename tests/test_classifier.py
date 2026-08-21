@@ -89,6 +89,19 @@ def test_internal_requires_attendees():
     assert classify(meta, BASE_CFG) is None
 
 
+def test_single_attendee_is_left_unclassified():
+    meta = ClassifyMeta("Weekly standup", ["a@mycompany.com"])
+    assert classify(meta, BASE_CFG) is None
+
+
+def test_single_external_attendee_still_matches_domain_rule():
+    meta = ClassifyMeta("Kickoff", ["alice@acme.com"])
+    result = classify(meta, BASE_CFG)
+    assert result is not None
+    assert result.type == "client"
+    assert result.entity == "Acme"
+
+
 def test_bad_regex_in_title_patterns_is_skipped_not_fatal():
     cfg = {
         **BASE_CFG,
