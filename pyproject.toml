@@ -32,9 +32,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    # Pinned: ruff's rules and formatter output shift between releases, breaking unrelated PRs.
+    # Pinned: both enforce rules, and a new release can fail a pull request that did not touch them.
     "ruff==0.16.4",
-    "mypy>=1.11.0",
+    "mypy==2.3.1",
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
     "types-requests",
