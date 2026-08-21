@@ -1,3 +1,3 @@
 """meeting-hive — local-first, AI-queryable meeting archive."""
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"

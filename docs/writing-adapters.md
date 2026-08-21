@@ -67,11 +67,9 @@ class YourToolSource:
         self._api_key_env = cfg.get("api_key_env", "YOURTOOL_API_KEY")
         # validate or raise SourceUnavailable / ValueError here
 
-    def list_meetings(self, since_days: int) -> list[Meeting]:
-        ...
+    def list_meetings(self, since_days: int) -> list[Meeting]: ...
 
-    def get_transcript(self, meeting_id: str) -> str | None:
-        ...
+    def get_transcript(self, meeting_id: str) -> str | None: ...
 ```
 
 **Register it** — add one line to `_BUILTINS` in `meeting_hive/sources/__init__.py`:
@@ -79,7 +77,7 @@ class YourToolSource:
 ```python
 _BUILTINS: dict[str, str] = {
     "granola": "meeting_hive.sources.granola:GranolaSource",
-    "fathom":  "meeting_hive.sources.fathom:FathomSource",
+    "fathom": "meeting_hive.sources.fathom:FathomSource",
     "yourtool": "meeting_hive.sources.yourtool:YourToolSource",  # ← new
 }
 ```
