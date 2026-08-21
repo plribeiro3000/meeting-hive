@@ -32,7 +32,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.6.0",
+    # Pinned: ruff's rules and formatter output shift between releases, breaking unrelated PRs.
+    "ruff==0.16.4",
     "mypy>=1.11.0",
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
