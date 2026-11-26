@@ -142,6 +142,35 @@ def test_unclassified_meeting_is_skipped_not_failed(tmp_path, monkeypatch, base_
     assert not (tmp_path / ".meeting-notes").exists()
 
 
+def test_source_unreachable_on_transcript_fails_the_run(tmp_path, monkeypatch, base_cfg):
+    meeting = sources.Meeting(
+        id="m1",
+        title="Kickoff with Acme",
+        attendees=["alice@acme.com", "me@mycompany.com"],
+        created_at=datetime(2026, 4, 17, 15, 0, tzinfo=UTC),
+    )
+
+    class _UnreachableSource(_StubSource):
+        def get_transcript(self, meeting_id):
+            raise sources.SourceUnavailable("Cannot reach source")
+
+    monkeypatch.setattr(classifier, "load_config", lambda *a, **kw: base_cfg)
+    monkeypatch.setattr(sync, "_resolve_source", lambda cfg: _UnreachableSource([meeting], {}))
+    monkeypatch.setattr(sync, "_resolve_vocab", lambda cfg: _StubVocab({}))
+    monkeypatch.setattr(sync, "_resolve_summarizer", lambda cfg: _StubSummarizer())
+    monkeypatch.setattr(writer, "NOTES_ROOT", tmp_path / ".meeting-notes")
+    from meeting_hive import notify
+
+    notifications = []
+    monkeypatch.setattr(notify, "notify", lambda *a, **kw: notifications.append(a))
+
+    stats = sync.run(since_days=7, dry_run=False)
+    assert stats["failed"] == 1
+    assert stats["processed"] == 0
+    assert any("source unavailable" in message for _, message in notifications)
+    assert not (tmp_path / ".meeting-notes").exists()
+
+
 def test_missing_summarizer_adapter_fails_cleanly(tmp_path, monkeypatch, base_cfg):
     cfg = {**base_cfg, "summarizer": {}}
     monkeypatch.setattr(classifier, "load_config", lambda *a, **kw: cfg)

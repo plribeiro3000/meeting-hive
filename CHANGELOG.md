@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-11-26
+
+### Fixed
+
+- Meetings with the same title starting in the same minute skipped
+- Meeting skipped when an older note had no start time
+- Fathom transcript skipped when the source was unreachable
+- Config read with the system encoding
+- Meetings skipped when the source key expired mid-run
+
 ## [2.0.3] - 2026-11-26
 
 ### Fixed

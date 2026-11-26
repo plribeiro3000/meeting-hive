@@ -265,6 +265,28 @@ def test_detail_fetch_unreachable_raises_source_unavailable(monkeypatch):
         src.list_meetings(since_days=7)
 
 
+def test_detail_fetch_rejected_key_raises_source_auth_error(monkeypatch):
+    monkeypatch.setenv("GRANOLA_API_KEY", "grn_test")
+    list_resp = _StubResponse(
+        200,
+        {
+            "notes": [{"id": "n1", "title": "X", "created_at": "2026-05-20T15:00:00Z"}],
+            "hasMore": False,
+        },
+    )
+
+    def fake_get(url, **kw):
+        if url.endswith("/v1/notes"):
+            return list_resp
+        return _StubResponse(401)
+
+    monkeypatch.setattr("meeting_hive.sources.granola.requests.get", fake_get)
+
+    src = GranolaSource()
+    with pytest.raises(SourceAuthError, match="401"):
+        src.list_meetings(since_days=7)
+
+
 def test_empty_transcript_returns_none(monkeypatch):
     """A meeting that exists but whose transcript is not ready yet — get_transcript → None."""
     monkeypatch.setenv("GRANOLA_API_KEY", "grn_test")

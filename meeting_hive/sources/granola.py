@@ -148,7 +148,7 @@ class GranolaSource:
     def _fetch_detail(self, note_id: str) -> dict | None:
         try:
             detail = self._request(f"/notes/{note_id}", params={"include": "transcript"})
-        except SourceUnavailable:
+        except (SourceUnavailable, SourceAuthError):
             raise
         except SourceError as e:
             log.warning("Granola detail fetch failed for %s: %s", note_id, e)

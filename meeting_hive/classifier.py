@@ -38,7 +38,7 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict:
     if not path.exists():
         raise ConfigError(f"config.yaml not found at {path}")
     try:
-        raw = path.read_text()
+        raw = path.read_text(encoding="utf-8")
         cfg = yaml.safe_load(raw)
     except yaml.YAMLError as e:
         mark = getattr(e, "problem_mark", None)
