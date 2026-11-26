@@ -44,6 +44,24 @@ def already_exists(date_str: str, slug: str, scope: str = DEFAULT_SCOPE) -> bool
     return summary.exists() or transcript.exists()
 
 
+def resolve_slug(date_str: str, slug: str, start: datetime, scope: str = DEFAULT_SCOPE) -> str:
+    """Slug a meeting is stored under: suffixed with its start time when another meeting
+    with the same title on the same day already holds the plain slug."""
+    summary, transcript = target_paths(date_str, slug, scope=scope)
+    if summary.exists():
+        existing = summary
+    elif transcript.exists():
+        existing = transcript
+    else:
+        return slug
+
+    start_time = start.astimezone().strftime("%H:%M")
+    match = re.search(r'^time: "(\d{2}:\d{2})', existing.read_text(encoding="utf-8"), re.MULTILINE)
+    if match is None or match.group(1) == start_time:
+        return slug
+    return f"{slug}-{start_time.replace(':', '')}"
+
+
 def _format_time_range(start: datetime, duration_seconds: int | None) -> str:
     """Format "HH:MM-HH:MM GMT±HH:MM" from start + optional duration, in local time."""
     start_local = start.astimezone()
@@ -126,7 +144,7 @@ def write_meeting(
     Idempotent: if either file already exists, nothing is written and None is returned.
     """
     date_str = start.astimezone().strftime("%Y-%m-%d")
-    slug = slugify(title)
+    slug = resolve_slug(date_str, slugify(title), start, scope=scope)
     summary_path, transcript_path = target_paths(date_str, slug, scope=scope)
 
     if already_exists(date_str, slug, scope=scope):
@@ -169,7 +187,7 @@ def write_meeting(
         return summary_path, transcript_path
 
     summary_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_path.write_text(summary_fm + summary_body)
-    transcript_path.write_text(transcript_fm + transcript_body)
+    summary_path.write_text(summary_fm + summary_body, encoding="utf-8")
+    transcript_path.write_text(transcript_fm + transcript_body, encoding="utf-8")
     log.info("Wrote: %s", summary_path.name)
     return summary_path, transcript_path

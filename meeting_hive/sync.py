@@ -139,7 +139,7 @@ def run(since_days: int = 7, dry_run: bool = False) -> dict:
     # 4. Per-meeting pipeline.
     for m in meetings:
         date_str = m.created_at.astimezone().strftime("%Y-%m-%d")
-        slug = writer.slugify(m.title)
+        slug = writer.resolve_slug(date_str, writer.slugify(m.title), m.created_at, scope=scope)
 
         if writer.already_exists(date_str, slug, scope=scope):
             log.debug("Skip (exists): %s %s", date_str, slug)
