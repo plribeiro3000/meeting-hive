@@ -139,7 +139,9 @@ def run(since_days: int = 7, dry_run: bool = False) -> dict:
     # 4. Per-meeting pipeline.
     for m in meetings:
         date_str = m.created_at.astimezone().strftime("%Y-%m-%d")
-        slug = writer.resolve_slug(date_str, writer.slugify(m.title), m.created_at, scope=scope)
+        slug = writer.resolve_slug(
+            date_str, writer.slugify(m.title), m.created_at, meeting_id=m.id, scope=scope
+        )
 
         if writer.already_exists(date_str, slug, scope=scope):
             log.debug("Skip (exists): %s %s", date_str, slug)
@@ -161,6 +163,12 @@ def run(since_days: int = 7, dry_run: bool = False) -> dict:
             log.error("Source auth failed mid-run — aborting")
             if not dry_run:
                 notify.notify("meeting-hive", "❌ source auth expired mid-run.")
+            stats["failed"] += 1
+            break
+        except sources.SourceUnavailable as e:
+            log.error("Source unavailable mid-run: %s", e)
+            if not dry_run:
+                notify.notify("meeting-hive", f"❌ source unavailable: {e}")
             stats["failed"] += 1
             break
 
@@ -207,6 +215,7 @@ def run(since_days: int = 7, dry_run: bool = False) -> dict:
                 classification_entity=result.entity,
                 transcript=transcript_fixed,
                 summary=summary_fixed,
+                meeting_id=m.id,
                 scope=scope,
                 source="meeting-hive",
                 dry_run=dry_run,

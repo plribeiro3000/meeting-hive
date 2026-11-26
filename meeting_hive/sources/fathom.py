@@ -110,6 +110,8 @@ class FathomSource:
     def get_transcript(self, meeting_id: str) -> str | None:
         try:
             data = self._request(f"/recordings/{meeting_id}/transcript")
+        except (SourceUnavailable, SourceAuthError):
+            raise
         except SourceError as e:
             log.warning("Fathom transcript fetch failed for %s: %s", meeting_id, e)
             return None

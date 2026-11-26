@@ -93,6 +93,36 @@ def test_resolve_slug_keeps_plain_slug_for_the_meeting_already_stored(sample_wri
     assert resolved == slug
 
 
+def test_same_title_same_minute_meetings_are_told_apart_by_id(sample_write_args):
+    first = writer.write_meeting(**sample_write_args, meeting_id="not_a", scope="work")
+    second = writer.write_meeting(**sample_write_args, meeting_id="not_b", scope="work")
+    assert first is not None
+    assert second is not None
+    assert second[0] != first[0]
+
+    assert writer.write_meeting(**sample_write_args, meeting_id="not_a", scope="work") is None
+    assert writer.write_meeting(**sample_write_args, meeting_id="not_b", scope="work") is None
+
+
+def test_meeting_id_is_written_to_frontmatter(sample_write_args):
+    result = writer.write_meeting(**sample_write_args, meeting_id="not_a", scope="work")
+    assert result is not None
+    assert 'meeting_id: "not_a"' in result[0].read_text(encoding="utf-8")
+    assert 'meeting_id: "not_a"' in result[1].read_text(encoding="utf-8")
+
+
+def test_file_without_time_or_id_is_not_taken_as_the_incoming_meeting(sample_write_args):
+    date_str = "2026-04-17"
+    slug = writer.slugify(sample_write_args["title"])
+    summary, _ = writer.target_paths(date_str, slug, scope="work")
+    summary.parent.mkdir(parents=True)
+    summary.write_text('---\ntitle: "Kickoff"\n---\n', encoding="utf-8")
+
+    result = writer.write_meeting(**sample_write_args, meeting_id="not_a", scope="work")
+    assert result is not None
+    assert result[0] != summary
+
+
 def test_write_dry_run_does_not_create_files(sample_write_args, tmp_path):
     result = writer.write_meeting(**sample_write_args, scope="work", dry_run=True)
     assert result is not None

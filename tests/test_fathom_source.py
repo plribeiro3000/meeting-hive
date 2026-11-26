@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import requests as _requests_module
 
-from meeting_hive.sources import SourceUnavailable
+from meeting_hive.sources import SourceAuthError, SourceUnavailable
 from meeting_hive.sources.fathom import FathomSource
 
 
@@ -56,3 +56,29 @@ def test_timeout_on_every_attempt_raises_source_unavailable(monkeypatch):
     with pytest.raises(SourceUnavailable, match="Cannot reach Fathom"):
         src.list_meetings(since_days=7)
     assert calls["count"] == 3
+
+
+def test_transcript_fetch_unreachable_raises_source_unavailable(monkeypatch):
+    monkeypatch.setenv("FATHOM_API_KEY", "fth_test")
+
+    def fake_get(*a, **kw):
+        raise _requests_module.ConnectionError("network down")
+
+    monkeypatch.setattr("meeting_hive.sources.fathom.requests.get", fake_get)
+    monkeypatch.setattr("meeting_hive.sources.fathom.time.sleep", lambda *_: None)
+
+    src = FathomSource()
+    with pytest.raises(SourceUnavailable, match="Cannot reach Fathom"):
+        src.get_transcript("rec1")
+
+
+def test_transcript_fetch_rejected_key_raises_source_auth_error(monkeypatch):
+    monkeypatch.setenv("FATHOM_API_KEY", "fth_test")
+    monkeypatch.setattr(
+        "meeting_hive.sources.fathom.requests.get",
+        lambda *a, **kw: _StubResponse(401),
+    )
+
+    src = FathomSource()
+    with pytest.raises(SourceAuthError, match="401"):
+        src.get_transcript("rec1")

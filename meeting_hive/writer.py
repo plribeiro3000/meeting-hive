@@ -44,22 +44,41 @@ def already_exists(date_str: str, slug: str, scope: str = DEFAULT_SCOPE) -> bool
     return summary.exists() or transcript.exists()
 
 
-def resolve_slug(date_str: str, slug: str, start: datetime, scope: str = DEFAULT_SCOPE) -> str:
-    """Slug a meeting is stored under: suffixed with its start time when another meeting
-    with the same title on the same day already holds the plain slug."""
-    summary, transcript = target_paths(date_str, slug, scope=scope)
-    if summary.exists():
-        existing = summary
-    elif transcript.exists():
-        existing = transcript
-    else:
-        return slug
-
+def resolve_slug(
+    date_str: str,
+    slug: str,
+    start: datetime,
+    meeting_id: str | None = None,
+    scope: str = DEFAULT_SCOPE,
+) -> str:
+    """Slug a meeting is stored under. Another meeting with the same title on the same
+    day pushes it to the slug suffixed with its start time, then also with its id."""
     start_time = start.astimezone().strftime("%H:%M")
-    match = re.search(r'^time: "(\d{2}:\d{2})', existing.read_text(encoding="utf-8"), re.MULTILINE)
-    if match is None or match.group(1) == start_time:
-        return slug
-    return f"{slug}-{start_time.replace(':', '')}"
+    candidates = [slug, f"{slug}-{start_time.replace(':', '')}"]
+    if meeting_id:
+        candidates.append(f"{candidates[1]}-{slugify(meeting_id)}")
+
+    for candidate in candidates:
+        summary, transcript = target_paths(date_str, candidate, scope=scope)
+        if summary.exists():
+            existing = summary
+        elif transcript.exists():
+            existing = transcript
+        else:
+            return candidate
+        if _holds_meeting(existing.read_text(encoding="utf-8"), meeting_id, start_time):
+            return candidate
+    return candidates[-1]
+
+
+def _holds_meeting(text: str, meeting_id: str | None, start_time: str) -> bool:
+    id_match = re.search(r'^meeting_id: "(.*)"$', text, re.MULTILINE)
+    if id_match is not None and meeting_id:
+        return id_match.group(1) == _escape_yaml(meeting_id)
+    time_match = re.search(r'^time: "(\d{2}:\d{2})', text, re.MULTILINE)
+    if time_match is None:
+        return False
+    return time_match.group(1) == start_time
 
 
 def _format_time_range(start: datetime, duration_seconds: int | None) -> str:
@@ -94,6 +113,7 @@ def _frontmatter_block(
     date_str: str,
     time_str: str,
     title: str,
+    meeting_id: str | None,
     classification_type: str,
     classification_entity: str,
     invitees: list[str],
@@ -107,9 +127,11 @@ def _frontmatter_block(
         f"date: {date_str}",
         f'time: "{time_str}"',
         f'title: "{_escape_yaml(title)}"',
-        f"{classification_type}: {classification_entity}",
-        "invitees:",
     ]
+    if meeting_id:
+        lines.append(f'meeting_id: "{_escape_yaml(meeting_id)}"')
+    lines.append(f"{classification_type}: {classification_entity}")
+    lines.append("invitees:")
     for email in invitees:
         lines.append(f"  - {email}")
     lines.append(f"source: {source}")
@@ -135,6 +157,7 @@ def write_meeting(
     classification_entity: str,
     transcript: str,
     summary: str,
+    meeting_id: str | None = None,
     scope: str = DEFAULT_SCOPE,
     source: str = "meeting-hive",
     dry_run: bool = False,
@@ -144,7 +167,7 @@ def write_meeting(
     Idempotent: if either file already exists, nothing is written and None is returned.
     """
     date_str = start.astimezone().strftime("%Y-%m-%d")
-    slug = resolve_slug(date_str, slugify(title), start, scope=scope)
+    slug = resolve_slug(date_str, slugify(title), start, meeting_id=meeting_id, scope=scope)
     summary_path, transcript_path = target_paths(date_str, slug, scope=scope)
 
     if already_exists(date_str, slug, scope=scope):
@@ -157,6 +180,7 @@ def write_meeting(
         date_str=date_str,
         time_str=time_str,
         title=title,
+        meeting_id=meeting_id,
         classification_type=classification_type,
         classification_entity=classification_entity,
         invitees=attendees,
@@ -171,6 +195,7 @@ def write_meeting(
         date_str=date_str,
         time_str=time_str,
         title=title,
+        meeting_id=meeting_id,
         classification_type=classification_type,
         classification_entity=classification_entity,
         invitees=attendees,
