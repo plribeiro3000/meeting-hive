@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+import yaml
 
 from meeting_hive import writer
 
@@ -169,6 +170,16 @@ def test_quotes_in_title_are_escaped(sample_write_args):
     summary_content = result[0].read_text()
     # Title line should have the quote escaped, not unterminated YAML.
     assert 'title: "She said \\"hi\\""' in summary_content
+
+
+def test_line_breaks_in_title_keep_frontmatter_valid(sample_write_args):
+    sample_write_args["title"] = "Kickoff\nAcme\r\tMy\x0bCompany\x7f\x85\x86\u2028\u2029\ufffe"
+    result = writer.write_meeting(**sample_write_args, meeting_id="not_a\nb", scope="work")
+    assert result is not None
+    content = result[0].read_text(encoding="utf-8")
+    frontmatter = yaml.safe_load(content.split("---\n")[1])
+    assert frontmatter["title"] == "Kickoff\nAcme\r\tMy\x0bCompany\x7f\x85\x86\u2028\u2029\ufffe"
+    assert frontmatter["meeting_id"] == "not_a\nb"
 
 
 def test_target_paths_shape():

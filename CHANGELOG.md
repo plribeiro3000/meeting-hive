@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Automated dependency updates
 
+### Fixed
+
+- Note frontmatter broken by line breaks in a meeting title
+
 ## [2.0.4] - 2026-11-26
 
 ### Fixed
