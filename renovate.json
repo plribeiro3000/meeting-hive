@@ -27,9 +27,9 @@
       "rangeStrategy": "auto"
     },
     {
-      "description": "pyproject.toml ranges are the contract the published package resolves against for every consumer. widen raises an upper bound only when a release falls outside it and keeps the lower bound, so a release inside the range opens no PR and consumers still receive it; an exact == pin is replaced with the new version. Matched by file, not manager: Renovate extracts this pyproject.toml with the poetry manager, not pep621.",
+      "description": "Runtime dependencies in pyproject.toml declare only a minimum version, so every release already satisfies them and opens no PR; replace rewrites only the exact == pins. The global pin strategy would turn each minimum into an exact pin. Matched by file, not manager: Renovate extracts this pyproject.toml with the poetry manager, not pep621.",
       "matchFileNames": ["pyproject.toml"],
-      "rangeStrategy": "widen"
+      "rangeStrategy": "replace"
     },
     {
       "description": "Suppress bulk 'Pin Dependencies' PRs created by rangeStrategy=pin. Pinning happens incrementally during version updates instead.",
