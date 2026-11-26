@@ -38,7 +38,7 @@ class FathomSource:
         base_url:    Override the API endpoint. Default: https://api.fathom.ai/external/v1.
         api_key_env: Env var holding the API key. Default: FATHOM_API_KEY.
         api_key:     Inline key (takes precedence over env). Avoid in production.
-        retries:     Retry attempts on 429/5xx. Default: 3.
+        retries:     Retry attempts on 429/5xx and connection failures. Default: 3.
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -72,8 +72,12 @@ class FathomSource:
                     continue
                 resp.raise_for_status()
                 return resp.json()
-            except requests.ConnectionError as e:
-                raise SourceUnavailable(f"Cannot reach Fathom at {self._base_url}") from e
+            except (requests.ConnectionError, requests.Timeout) as e:
+                if attempt == self._retries - 1:
+                    raise SourceUnavailable(f"Cannot reach Fathom at {self._base_url}") from e
+                wait = 2**attempt
+                log.warning("Fathom unreachable — retrying in %ds", wait)
+                time.sleep(wait)
             except requests.HTTPError as e:
                 last_error = e
                 if attempt == self._retries - 1:

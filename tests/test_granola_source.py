@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import requests as _requests_module
 
-from meeting_hive.sources import SourceAuthError
+from meeting_hive.sources import SourceAuthError, SourceUnavailable
 from meeting_hive.sources.granola import GranolaSource
 
 
@@ -220,6 +220,49 @@ def test_429_retries_then_succeeds(monkeypatch):
     meetings = src.list_meetings(since_days=7)
     assert meetings == []
     assert idx["i"] >= 3  # 2 x 429 + 1 x 200
+
+
+def test_connection_error_retries_then_succeeds(monkeypatch):
+    monkeypatch.setenv("GRANOLA_API_KEY", "grn_test")
+    success = _StubResponse(200, {"notes": [], "hasMore": False, "cursor": None})
+    calls = {"count": 0}
+
+    def fake_get(*a, **kw):
+        calls["count"] += 1
+        if calls["count"] < 3:
+            raise _requests_module.ConnectionError("network down")
+        return success
+
+    monkeypatch.setattr("meeting_hive.sources.granola.requests.get", fake_get)
+    monkeypatch.setattr("meeting_hive.sources.granola.time.sleep", lambda *_: None)
+
+    src = GranolaSource()
+    assert src.list_meetings(since_days=7) == []
+    assert calls["count"] == 3
+
+
+def test_detail_fetch_unreachable_raises_source_unavailable(monkeypatch):
+    """A meeting whose detail cannot be fetched must fail the run, not vanish from it."""
+    monkeypatch.setenv("GRANOLA_API_KEY", "grn_test")
+    list_resp = _StubResponse(
+        200,
+        {
+            "notes": [{"id": "n1", "title": "X", "created_at": "2026-05-20T15:00:00Z"}],
+            "hasMore": False,
+        },
+    )
+
+    def fake_get(url, **kw):
+        if url.endswith("/v1/notes"):
+            return list_resp
+        raise _requests_module.ConnectionError("network down")
+
+    monkeypatch.setattr("meeting_hive.sources.granola.requests.get", fake_get)
+    monkeypatch.setattr("meeting_hive.sources.granola.time.sleep", lambda *_: None)
+
+    src = GranolaSource()
+    with pytest.raises(SourceUnavailable, match="Cannot reach Granola"):
+        src.list_meetings(since_days=7)
 
 
 def test_empty_transcript_returns_none(monkeypatch):

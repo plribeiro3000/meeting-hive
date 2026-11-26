@@ -38,7 +38,7 @@ class GranolaSource:
         base_url:    Override the API endpoint. Default: https://public-api.granola.ai/v1.
         api_key_env: Env var holding the API key. Default: GRANOLA_API_KEY.
         api_key:     Inline key (takes precedence over env). Avoid in production.
-        retries:     Retry attempts on 429/5xx. Default: 3.
+        retries:     Retry attempts on 429/5xx and connection failures. Default: 3.
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -85,8 +85,12 @@ class GranolaSource:
                     continue
                 resp.raise_for_status()
                 return resp.json()
-            except requests.ConnectionError as e:
-                raise SourceUnavailable(f"Cannot reach Granola at {self._base_url}") from e
+            except (requests.ConnectionError, requests.Timeout) as e:
+                if attempt == self._retries - 1:
+                    raise SourceUnavailable(f"Cannot reach Granola at {self._base_url}") from e
+                wait = 2**attempt
+                log.warning("Granola unreachable — retrying in %ds", wait)
+                time.sleep(wait)
             except requests.HTTPError as e:
                 last_error = e
                 if attempt == self._retries - 1:
@@ -144,6 +148,8 @@ class GranolaSource:
     def _fetch_detail(self, note_id: str) -> dict | None:
         try:
             detail = self._request(f"/notes/{note_id}", params={"include": "transcript"})
+        except SourceUnavailable:
+            raise
         except SourceError as e:
             log.warning("Granola detail fetch failed for %s: %s", note_id, e)
             return None
