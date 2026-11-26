@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Note frontmatter broken by line breaks in a meeting title
+- Dependency version ranges narrowed by automated updates
 
 ## [2.0.4] - 2026-11-26
 

@@ -27,8 +27,8 @@
       "rangeStrategy": "auto"
     },
     {
-      "description": "pyproject.toml ranges are the contract the published package resolves against for every consumer. widen raises an upper bound only when a release falls outside it and keeps the lower bound, so a release inside the range opens no PR and consumers still receive it; an exact == pin is replaced with the new version.",
-      "matchManagers": ["pep621"],
+      "description": "pyproject.toml ranges are the contract the published package resolves against for every consumer. widen raises an upper bound only when a release falls outside it and keeps the lower bound, so a release inside the range opens no PR and consumers still receive it; an exact == pin is replaced with the new version. Matched by file, not manager: Renovate extracts this pyproject.toml with the poetry manager, not pep621.",
+      "matchFileNames": ["pyproject.toml"],
       "rangeStrategy": "widen"
     },
     {
