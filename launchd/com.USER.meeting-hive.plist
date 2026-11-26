@@ -18,9 +18,15 @@
 
     <!-- Calls the autocommit wrapper, which runs `meeting-hive sync` and then
          commits any changes in ~/.meeting-notes/ to a local-only git repo.
-         Git here is a versioning/diff tool, not a backup — see README. -->
+         Git here is a versioning/diff tool, not a backup — see README.
+         caffeinate holds a sleep assertion while the wrapper runs: launchd
+         starts a missed job during a few-second dark wake, and without the
+         assertion the Mac sleeps again mid-request. -->
     <key>ProgramArguments</key>
     <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>-s</string>
         <string>__BIN__</string>
     </array>
 
