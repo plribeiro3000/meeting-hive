@@ -13,6 +13,16 @@ log = logging.getLogger(__name__)
 NOTES_ROOT = Path.home() / ".meeting-notes"
 DEFAULT_SCOPE = "work"
 SLUG_MAX_LEN = 60
+YAML_ESCAPES = {
+    "\\": "\\\\",
+    '"': '\\"',
+    "\n": "\\n",
+    "\r": "\\r",
+    "\t": "\\t",
+    "\x85": "\\N",
+    "\u2028": "\\L",
+    "\u2029": "\\P",
+}
 
 
 def slugify(text: str) -> str:
@@ -143,8 +153,23 @@ def _frontmatter_block(
     return "\n".join(lines) + "\n"
 
 
-def _escape_yaml(s: str) -> str:
-    return s.replace("\\", "\\\\").replace('"', '\\"')
+def _escape_yaml(text: str) -> str:
+    escaped = []
+    for character in text:
+        code = ord(character)
+        # Ranges mirror PyYAML's NON_PRINTABLE; the map runs first because \x85 is allowed.
+        if character in YAML_ESCAPES:
+            escaped.append(YAML_ESCAPES[character])
+        elif (
+            code < 0x20
+            or 0x7F <= code <= 0x9F
+            or 0xD800 <= code <= 0xDFFF
+            or code in (0xFFFE, 0xFFFF)
+        ):
+            escaped.append(f"\\u{code:04x}")
+        else:
+            escaped.append(character)
+    return "".join(escaped)
 
 
 def write_meeting(
