@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "internalChecksFilter": "strict",
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "rangeStrategy": "pin",
+  "rebaseWhen": "never",
+  "packageRules": [
+    {
+      "description": "Pin and pinDigest updates bypass minimumReleaseAge",
+      "matchUpdateTypes": ["pin", "pinDigest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "GitHub Actions digest updates bypass minimumReleaseAge (Renovate cannot compute releaseTimestamp for moving tags)",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "GitHub Actions keep default rangeStrategy (managed by helpers:pinGitHubActionDigests). Workaround for renovatebot/renovate#41624.",
+      "matchManagers": ["github-actions"],
+      "rangeStrategy": "auto"
+    },
+    {
+      "description": "pyproject.toml ranges are the contract the published package resolves against for every consumer. widen raises an upper bound only when a release falls outside it and keeps the lower bound, so a release inside the range opens no PR and consumers still receive it; an exact == pin is replaced with the new version.",
+      "matchManagers": ["pep621"],
+      "rangeStrategy": "widen"
+    },
+    {
+      "description": "Suppress bulk 'Pin Dependencies' PRs created by rangeStrategy=pin. Pinning happens incrementally during version updates instead.",
+      "matchUpdateTypes": ["pin"],
+      "enabled": false
+    }
+  ]
+}

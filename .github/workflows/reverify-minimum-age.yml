@@ -1,0 +1,59 @@
+name: Reverify Minimum Age
+
+# Re-evaluate the Verify Minimum Age commit status on every open PR daily,
+# so it self-heals from pending to success once the minimum release age is
+# reached — no manual rebase or retry required on each PR.
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  reverify-open-prs:
+    name: Re-verify open PRs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      # An unset variable interpolates to the empty string, and the per-PR
+      # `|| echo` below swallows the script's own refusal — so every open PR
+      # would be warned over, none would get a commit status, and the job
+      # would still report success.
+      - name: Require the minimum release age to be configured
+        run: ': "${MIN_AGE_DAYS:?DEPENDENCY_MINIMUM_RELEASE_AGE_DAYS is required}"'
+        env:
+          MIN_AGE_DAYS: ${{ vars.DEPENDENCY_MINIMUM_RELEASE_AGE_DAYS }}
+
+      - name: Re-evaluate Verify Minimum Age on every open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTIFY_HANDLE: plribeiro3000
+          MIN_AGE_DAYS: ${{ vars.DEPENDENCY_MINIMUM_RELEASE_AGE_DAYS }}
+        run: |
+          set -euo pipefail
+
+          PRS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json number,headRefOid,headRefName --jq '.[] | "\(.number)\t\(.headRefOid)\t\(.headRefName)"')
+
+          if [[ -z "$PRS" ]]; then
+            echo "No open PRs to re-verify."
+            exit 0
+          fi
+
+          # Never pre-filter which PRs reach the script: it skips the ones with
+          # nothing to age itself, and posts the green status branch protection
+          # requires. A copy of that condition here drifts and strands PRs.
+          while IFS=$'\t' read -r PR_NUMBER COMMIT_SHA BRANCH; do
+            echo "::group::PR #${PR_NUMBER} (${BRANCH} @ ${COMMIT_SHA})"
+            COMMIT_SHA="$COMMIT_SHA" PR_NUMBER="$PR_NUMBER" GH_TOKEN="$GH_TOKEN" NOTIFY_HANDLE="$NOTIFY_HANDLE" MIN_AGE_DAYS="$MIN_AGE_DAYS" .github/scripts/verify-minimum-age.sh || echo "::warning::verify script exited non-zero for PR #${PR_NUMBER}"
+            echo "::endgroup::"
+          done <<< "$PRS"
