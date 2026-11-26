@@ -69,6 +69,30 @@ def test_write_is_idempotent_when_summary_already_exists(sample_write_args, tmp_
     assert second is None
 
 
+def test_second_meeting_with_same_title_on_same_day_gets_its_own_files(sample_write_args):
+    first = writer.write_meeting(**sample_write_args, scope="work")
+    assert first is not None
+
+    sample_write_args["start"] = datetime(2026, 4, 17, 19, 0, tzinfo=UTC)
+    second = writer.write_meeting(**sample_write_args, scope="work")
+    assert second is not None
+    assert second[0] != first[0]
+    assert second[0].exists()
+    assert first[0].exists()
+
+    third = writer.write_meeting(**sample_write_args, scope="work")
+    assert third is None
+
+
+def test_resolve_slug_keeps_plain_slug_for_the_meeting_already_stored(sample_write_args):
+    result = writer.write_meeting(**sample_write_args, scope="work")
+    assert result is not None
+    date_str = result[0].name[:10]
+    slug = writer.slugify(sample_write_args["title"])
+    resolved = writer.resolve_slug(date_str, slug, sample_write_args["start"], scope="work")
+    assert resolved == slug
+
+
 def test_write_dry_run_does_not_create_files(sample_write_args, tmp_path):
     result = writer.write_meeting(**sample_write_args, scope="work", dry_run=True)
     assert result is not None
