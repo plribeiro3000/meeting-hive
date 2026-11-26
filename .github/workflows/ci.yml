@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: "3.15"
           cache: pip
       - name: Install dev deps
         run: python -m pip install --upgrade pip && pip install -e ".[dev]"
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: "3.15"
           cache: pip
       - name: Install dev deps
         run: python -m pip install --upgrade pip && pip install -e ".[dev]"
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: "3.15"
           cache: pip
       - name: Install package and pip-audit
         run: |
